@@ -1,0 +1,29 @@
+// Microservicio: Notificaciones (MongoDB)
+// Alcance: registro y lectura de notificaciones consumidas desde eventos.
+// Nota: userId es referencia lógica a identidad externa (sin FK entre microservicios).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("NOTIFICACIONES_DATABASE_URL")
+}
+
+model Notificacion {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   // destinatario
+  tipo       String   // p.ej. PEDIDO_ESTADO_CAMBIADO
+  mensaje    String
+  payload    Json?
+  leida      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  readAt     DateTime?
+
+  @@index([userId])
+  @@index([tipo])
+  @@index([leida])
+  @@index([createdAt])
+  @@map("notificaciones")
+}

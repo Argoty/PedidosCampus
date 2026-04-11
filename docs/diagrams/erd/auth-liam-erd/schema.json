@@ -1,0 +1,245 @@
+{
+  "tables": {
+    "auth_users": {
+      "name": "auth_users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "passwordHash": {
+          "name": "passwordHash",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "role": {
+          "name": "role",
+          "type": "AuthRole",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "boolean",
+          "default": true,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        }
+      },
+      "comment": null,
+      "indexes": {
+        "auth_users_pkey": {
+          "name": "auth_users_pkey",
+          "unique": true,
+          "columns": [
+            "id"
+          ],
+          "type": ""
+        },
+        "auth_users_email_key": {
+          "name": "auth_users_email_key",
+          "unique": true,
+          "columns": [
+            "email"
+          ],
+          "type": ""
+        }
+      },
+      "constraints": {
+        "PRIMARY_id": {
+          "type": "PRIMARY KEY",
+          "name": "PRIMARY_id",
+          "columnNames": [
+            "id"
+          ]
+        },
+        "UNIQUE_email": {
+          "type": "UNIQUE",
+          "name": "UNIQUE_email",
+          "columnNames": [
+            "email"
+          ]
+        }
+      }
+    },
+    "refresh_tokens": {
+      "name": "refresh_tokens",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "tokenHash": {
+          "name": "tokenHash",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp(3)",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "revokedAt": {
+          "name": "revokedAt",
+          "type": "timestamp(3)",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        },
+        "lastUsedAt": {
+          "name": "lastUsedAt",
+          "type": "timestamp(3)",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true,
+          "comment": null,
+          "check": null
+        }
+      },
+      "comment": null,
+      "indexes": {
+        "refresh_tokens_pkey": {
+          "name": "refresh_tokens_pkey",
+          "unique": true,
+          "columns": [
+            "id"
+          ],
+          "type": ""
+        },
+        "refresh_tokens_tokenHash_key": {
+          "name": "refresh_tokens_tokenHash_key",
+          "unique": true,
+          "columns": [
+            "tokenHash"
+          ],
+          "type": ""
+        },
+        "refresh_tokens_userId_idx": {
+          "name": "refresh_tokens_userId_idx",
+          "unique": false,
+          "columns": [
+            "userId"
+          ],
+          "type": ""
+        },
+        "refresh_tokens_expiresAt_idx": {
+          "name": "refresh_tokens_expiresAt_idx",
+          "unique": false,
+          "columns": [
+            "expiresAt"
+          ],
+          "type": ""
+        }
+      },
+      "constraints": {
+        "PRIMARY_id": {
+          "type": "PRIMARY KEY",
+          "name": "PRIMARY_id",
+          "columnNames": [
+            "id"
+          ]
+        },
+        "UNIQUE_tokenHash": {
+          "type": "UNIQUE",
+          "name": "UNIQUE_tokenHash",
+          "columnNames": [
+            "tokenHash"
+          ]
+        },
+        "AuthUserToRefreshToken": {
+          "type": "FOREIGN KEY",
+          "name": "AuthUserToRefreshToken",
+          "columnNames": [
+            "userId"
+          ],
+          "targetTableName": "auth_users",
+          "targetColumnNames": [
+            "id"
+          ],
+          "updateConstraint": "NO_ACTION",
+          "deleteConstraint": "CASCADE"
+        }
+      }
+    }
+  },
+  "enums": {
+    "AuthRole": {
+      "name": "AuthRole",
+      "values": [
+        "usuario",
+        "repartidor",
+        "admin"
+      ],
+      "comment": null
+    }
+  },
+  "extensions": {}
+}

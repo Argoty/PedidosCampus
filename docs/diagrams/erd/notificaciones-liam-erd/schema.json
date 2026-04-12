@@ -1,0 +1,127 @@
+{
+  "tables": {
+    "notificaciones": {
+      "name": "notificaciones",
+      "columns": {
+        "_id": {
+          "name": "_id",
+          "type": "objectid",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "mensaje": {
+          "name": "mensaje",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        },
+        "leida": {
+          "name": "leida",
+          "type": "boolean",
+          "default": false,
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true,
+          "comment": null,
+          "check": null
+        },
+        "readAt": {
+          "name": "readAt",
+          "type": "timestamp(3)",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        }
+      },
+      "comment": null,
+      "indexes": {
+        "notificaciones_pkey": {
+          "name": "notificaciones_pkey",
+          "unique": true,
+          "columns": [
+            "_id"
+          ],
+          "type": ""
+        },
+        "notificaciones_userId_idx": {
+          "name": "notificaciones_userId_idx",
+          "unique": false,
+          "columns": [
+            "userId"
+          ],
+          "type": ""
+        },
+        "notificaciones_tipo_idx": {
+          "name": "notificaciones_tipo_idx",
+          "unique": false,
+          "columns": [
+            "tipo"
+          ],
+          "type": ""
+        },
+        "notificaciones_leida_idx": {
+          "name": "notificaciones_leida_idx",
+          "unique": false,
+          "columns": [
+            "leida"
+          ],
+          "type": ""
+        },
+        "notificaciones_createdAt_idx": {
+          "name": "notificaciones_createdAt_idx",
+          "unique": false,
+          "columns": [
+            "createdAt"
+          ],
+          "type": ""
+        }
+      },
+      "constraints": {
+        "PRIMARY__id": {
+          "type": "PRIMARY KEY",
+          "name": "PRIMARY__id",
+          "columnNames": [
+            "_id"
+          ]
+        }
+      }
+    }
+  },
+  "enums": {},
+  "extensions": {}
+}

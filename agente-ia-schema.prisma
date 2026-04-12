@@ -1,0 +1,4 @@
+// Microservicio: Agente IA
+// Fuente de verdad: no define base de datos para este servicio.
+// Rol principal: consulta métricas y responde al admin.
+// Por diseño actual: SIN tablas y SIN relaciones persistentes.

@@ -16,7 +16,7 @@ model Restaurante {
   descripcion String?
   direccion   String
   categoria   String
-  urlImagen   String?    // URL pública de la imagen del restaurante
+  imagenUrl   String?
   isActive    Boolean    @default(true)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

@@ -23,7 +23,7 @@ model UsuarioPerfil {
   nombre      String
   telefono    String?
   direccion   String?
-  disponible  Boolean?  // aplica para repartidor
+  disponible  Boolean   @default(false) // aplica para repartidor
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

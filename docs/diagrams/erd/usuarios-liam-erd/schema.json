@@ -54,8 +54,8 @@
         "disponible": {
           "name": "disponible",
           "type": "boolean",
-          "default": null,
-          "notNull": false,
+          "default": false,
+          "notNull": true,
           "comment": null,
           "check": null
         },

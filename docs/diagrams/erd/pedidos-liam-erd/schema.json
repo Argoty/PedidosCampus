@@ -67,6 +67,14 @@
           "comment": null,
           "check": null
         },
+        "direccionEntrega": {
+          "name": "direccionEntrega",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp(3)",

@@ -43,6 +43,14 @@
           "comment": null,
           "check": null
         },
+        "urlImagen": {
+          "name": "urlImagen",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "comment": null,
+          "check": null
+        },
         "isActive": {
           "name": "isActive",
           "type": "boolean",

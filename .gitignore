@@ -1,0 +1,6 @@
+# Entornos locales de docker compose
+.env.docker
+
+# Basicos
+.DS_Store
+*.log

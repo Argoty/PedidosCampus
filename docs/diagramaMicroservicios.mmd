@@ -1,0 +1,63 @@
+graph LR
+    U([Usuario])
+    R([Repartidor])
+    A([Admin])
+
+    GW[API Gateway - NestJS]
+
+    AUTH[Auth - NestJS + Passport]
+    USR[Usuarios - C# .NET 8]
+    REST[Restaurantes - FastAPI]
+    PED[Pedidos - Go + Gin]
+    NOTIF[Notificaciones - FastAPI Serverless]
+    CAL[Calificaciones - Rust + Actix]
+    IA[Agente IA - FastAPI + LLM]
+
+    MQ{{RabbitMQ}}
+
+    DB_AUTH[(PostgreSQL Auth)]
+    DB_USR[(PostgreSQL Usuarios)]
+    DB_REST[(PostgreSQL Restaurantes)]
+    DB_PED[(PostgreSQL Pedidos)]
+    DB_NOTIF[(MongoDB Notificaciones)]
+    DB_CAL[(PostgreSQL Calificaciones)]
+
+    U -->|HTTP| GW
+    R -->|HTTP| GW
+    A -->|HTTP| GW
+
+    GW -->|/auth| AUTH
+    GW -->|/users| USR
+    GW -->|/restaurants| REST
+    GW -->|/orders| PED
+    GW -->|/notifications| NOTIF
+    GW -->|/ratings| CAL
+    GW -->|/ai| IA
+
+    AUTH --- DB_AUTH
+    USR --- DB_USR
+    REST --- DB_REST
+    PED --- DB_PED
+    NOTIF --- DB_NOTIF
+    CAL --- DB_CAL
+
+    PED -.->|publica evento| MQ
+    MQ -.->|consume evento| NOTIF
+
+    classDef nestjs fill:#ffc9c9,stroke:#ef4444,color:#1e1e1e
+    classDef dotnet fill:#a5d8ff,stroke:#2563eb,color:#1e1e1e
+    classDef fastapi fill:#ffd8a8,stroke:#b45309,color:#1e1e1e
+    classDef golang fill:#c3fae8,stroke:#0f766e,color:#1e1e1e
+    classDef rust fill:#eebefa,stroke:#7e22ce,color:#1e1e1e
+    classDef broker fill:#fff3bf,stroke:#d97706,color:#1e1e1e
+    classDef actor fill:#dbe4ff,stroke:#4a9eed,color:#1e1e1e
+    classDef db fill:#f1f3f5,stroke:#868e96,color:#1e1e1e
+
+    class AUTH,GW nestjs
+    class USR dotnet
+    class REST,NOTIF,IA fastapi
+    class PED golang
+    class CAL rust
+    class MQ broker
+    class U,R,A actor
+    class DB_AUTH,DB_USR,DB_REST,DB_PED,DB_NOTIF,DB_CAL db

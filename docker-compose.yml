@@ -1,0 +1,41 @@
+services:
+  auth-db:
+    image: postgres:16-alpine
+    container_name: pedidoscampus-auth-db
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_DB: auth_db
+    ports:
+      - '5433:5432'
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U auth_user -d auth_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    container_name: pedidoscampus-auth-service
+    build:
+      context: ./microservices/auth-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      AUTH_DATABASE_URL: postgresql://auth_user:${AUTH_DB_PASSWORD}@auth-db:5432/auth_db?schema=public
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      BCRYPT_SALT_ROUNDS: 10
+      COOKIE_SECURE: 'false'
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    restart: unless-stopped
+
+volumes:
+  auth_postgres_data:

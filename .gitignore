@@ -1,14 +1,139 @@
-# Entornos locales de docker compose
+# ============================================================
+# ENVIRONMENT & SECRETS
+# ============================================================
+.env
+.env.local
+.env.*.local
 .env.docker
 
-# Basicos
+# ============================================================
+# OS & IDE
+# ============================================================
 .DS_Store
-*.log
+.AppleDouble
+.LSOverride
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
 
-# Ignora diagramas
+# ============================================================
+# LOGS & ARTIFACTS
+# ============================================================
+*.log
+*.log.*
+logs/
+tmp/
+temp/
+
+# ============================================================
+# GO
+# ============================================================
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+bin/
+dist/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# ============================================================
+# NODE.JS / NPM (Auth Service, User Service)
+# ============================================================
+node_modules/
+npm-debug.log
+npm-error.log
+yarn-error.log
+yarn-debug.log
+package-lock.json
+yarn.lock
+dist/
+build/
+
+# Prisma
+prisma/migrations/
+.prisma/
+
+# ============================================================
+# .NET / C# (User Service)
+# ============================================================
+bin/
+obj/
+*.csproj.user
+*.sln.user
+*.suo
+appsettings.Development.json
+appsettings.local.json
+launchSettings.json
+.vs/
+
+# ============================================================
+# DOCKER
+# ============================================================
+.dockerignore
+docker-compose.override.yml
+
+# ============================================================
+# DIAGRAMS (ERD TOOLS)
+# ============================================================
 auth-liam-erd/
 calificaciones-liam-erd/
 notificaciones-liam-erd/
 pedidos-liam-erd/
 restaurantes-liam-erd/
 usuarios-liam-erd/
+
+# ============================================================
+# DATABASE & BACKUPS
+# ============================================================
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.backup
+postgres_data/
+mysql_data/
+mongodb_data/
+
+# ============================================================
+# IDE & EDITOR
+# ============================================================
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+.project
+.classpath
+*.c9/
+*.iml
+*.iws
+*.ipr
+
+# ============================================================
+# DOCUMENTATION & BUILDS
+# ============================================================
+docs/swagger.json
+docs/swagger.yaml
+dist/
+build/

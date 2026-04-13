@@ -1,0 +1,101 @@
+@baseUrl = http://localhost:5000/api
+@profileId = 00000000-0000-0000-0000-000000000001
+
+### 1. Crear un nuevo perfil (usuario)
+POST {{baseUrl}}/profiles
+Content-Type: application/json
+
+{
+  "tipo": "usuario",
+  "nombre": "Juan Pérez",
+  "telefono": "+57 300 1234567",
+  "direccion": "Cra 5 # 10-20, Bogotá"
+}
+
+### 2. Crear un perfil de repartidor
+POST {{baseUrl}}/profiles
+Content-Type: application/json
+
+{
+  "tipo": "repartidor",
+  "nombre": "Carlos López",
+  "telefono": "+57 310 9876543",
+  "direccion": "Cra 8 # 15-30, Bogotá"
+}
+
+### 3. Obtener mi perfil
+GET {{baseUrl}}/profiles/me
+Authorization: Bearer {{token}}
+
+### 4. Actualizar mi perfil
+PATCH {{baseUrl}}/profiles/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Juan Pérez Actualizado",
+  "telefono": "+57 300 9999999"
+}
+
+### 5. Obtener perfil por ID
+GET {{baseUrl}}/profiles/{{profileId}}
+
+### 6. Cambiar disponibilidad (repartidor)
+POST {{baseUrl}}/profiles/me/availability
+Content-Type: application/json
+Authorization: Bearer {{repartidorToken}}
+
+{
+  "disponible": true
+}
+
+### 7. Consultar mi disponibilidad
+GET {{baseUrl}}/profiles/me/availability
+Authorization: Bearer {{repartidorToken}}
+
+### 8. Listar repartidores disponibles (internal)
+GET {{baseUrl}}/profiles/delivery?limit=20&offset=0&onlyAvailable=true
+X-Client: gateway
+
+### 9. Buscar perfiles avanzado (internal)
+GET {{baseUrl}}/profiles/search?tipo=repartidor&disponible=true&limit=10&offset=0
+X-Client: gateway
+
+### 10. Admin: Listar todos los perfiles
+GET {{baseUrl}}/profiles?tipo=usuario&isActive=true&limit=20&offset=0
+Authorization: Bearer {{adminToken}}
+
+### 11. Admin: Desactivar perfil
+POST {{baseUrl}}/profiles/{{profileId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### 12. Admin: Activar perfil
+POST {{baseUrl}}/profiles/{{profileId}}/activate
+Authorization: Bearer {{adminToken}}
+
+### 13. Admin: Actualizar perfil
+PATCH {{baseUrl}}/profiles/{{profileId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "nombre": "Nombre Actualizado por Admin",
+  "telefono": "+57 300 1111111"
+}
+
+### 14. Admin: Eliminar perfil
+DELETE {{baseUrl}}/profiles/{{profileId}}
+Authorization: Bearer {{adminToken}}
+
+### 15. Reservar repartidor (internal)
+POST {{baseUrl}}/profiles/{{profileId}}/reserve
+Content-Type: application/json
+X-Client: gateway
+
+{
+  "ttlSeconds": 300
+}
+
+### 16. Liberar reserva (internal)
+POST {{baseUrl}}/profiles/{{profileId}}/release
+X-Client: gateway

@@ -4,3 +4,11 @@
 # Basicos
 .DS_Store
 *.log
+
+# Ignora diagramas
+auth-liam-erd/
+calificaciones-liam-erd/
+notificaciones-liam-erd/
+pedidos-liam-erd/
+restaurantes-liam-erd/
+usuarios-liam-erd/

@@ -23,7 +23,7 @@ model Pedido {
   userId        String          @db.Uuid // referencia lógica a Auth/Usuarios
   restauranteId String          @db.Uuid // referencia lógica a Restaurantes
   repartidorId  String?         @db.Uuid // referencia lógica a Usuarios (tipo repartidor)
-  direccionEntrega String
+  //direccionEntrega String
   estado        EstadoPedido    @default(pendiente)
   subtotal      Decimal         @db.Decimal(10, 2)
   costoEntrega  Decimal         @default(0) @db.Decimal(10, 2)

@@ -4,3 +4,17 @@
 # Basicos
 .DS_Store
 *.log
+
+# .NET configuration (secrets should not be tracked)
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+!appsettings.*.example.json
+
+# Ignora diagramas
+auth-liam-erd/
+calificaciones-liam-erd/
+notificaciones-liam-erd/
+pedidos-liam-erd/
+restaurantes-liam-erd/
+usuarios-liam-erd/

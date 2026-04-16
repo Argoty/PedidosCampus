@@ -37,5 +37,39 @@ services:
       - '3001:3001'
     restart: unless-stopped
 
+  user-db:
+    image: postgres:16-alpine
+    container_name: pedidoscampus-user-db
+    environment:
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-user_password}
+      POSTGRES_DB: user_db
+    ports:
+      - '5434:5432'
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user_user -d user_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    container_name: pedidoscampus-user-service
+    build:
+      context: ./microservices/user-service
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=user-db;Port=5432;Database=user_db;Username=user_user;Password=${USER_DB_PASSWORD:-user_password}"
+    depends_on:
+      user-db:
+        condition: service_healthy
+    ports:
+      - '5000:5000'
+    restart: unless-stopped
+
 volumes:
   auth_postgres_data:
+  user_postgres_data:

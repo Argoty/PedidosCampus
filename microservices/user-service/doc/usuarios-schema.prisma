@@ -1,0 +1,37 @@
+// Microservicio: Usuarios (PostgreSQL)
+// Alcance: perfiles de usuario/repartidor y disponibilidad.
+// Nota: userId referencia identidad externa (Auth) sin FK entre microservicios.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("USUARIOS_DATABASE_URL")
+}
+
+enum UserType {
+  usuario
+  repartidor
+}
+
+model UsuarioPerfil {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @unique @db.Uuid // ID de AuthUser (referencia lógica, sin FK)
+  tipo          UserType
+  nombre        String
+  telefono      String?
+  direccion     String?
+  disponible    Boolean   @default(false) // aplica para repartidor
+  isActive      Boolean   @default(true)
+  reservedUntil DateTime? // Para reserva atómica de repartidores (evita race condition)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tipo])
+  @@index([isActive])
+  @@index([disponible])
+  @@index([reservedUntil])
+  @@map("usuario_perfiles")
+}

@@ -4,12 +4,14 @@ Plataforma universitaria de pedidos construida con arquitectura de microservicio
 
 ## 📋 Estado actual del repositorio
 
-Fase de primera entrega academica:
+Fase de primera entrega académica:
 
 - ✅ **Microservicio Auth**: NestJS + Prisma + PostgreSQL (operativo)
 - ✅ **Microservicio User**: ASP.NET 8 + EF Core + PostgreSQL (operativo)
+- ✅ **Microservicio Notificaciones**: Cloudflare Workers + KV (operativo)
 - ✅ **Docker Compose**: Stack local completo (auth-service + user-service)
 - ✅ **Postman Collections**: Testing de todos los endpoints
+- 📚 Documentación funcional y diagramas en `docs/`
 
 ## 🚀 Quick Start: Levantar Todo con Docker
 
@@ -41,6 +43,22 @@ docker compose ps
 # - Auth Service: http://localhost:3001
 ```
 
+## Levantar Notificaciones en local (Cloudflare Workers)
+
+Desde `microservices/notificaciones-service`:
+
+1. Instalar dependencias:
+   - `npm install`
+2. Crear namespace KV:
+   - `npx wrangler kv namespace create NOTIFICATIONS`
+3. Copiar el `id` y `preview_id` en `wrangler.toml`
+4. Ejecutar en local:
+   - `npm run dev`
+
+Endpoint local por defecto:
+
+- Notificaciones Worker: `http://127.0.0.1:8787`
+
 ## 📚 Guías Completas
 
 ### 🐳 **Para Docker & Setup**
@@ -56,6 +74,25 @@ Consulta: **[postman/README.md](postman/README.md)**
 - Generar JWT mock token
 - 4 testing workflows
 - Ejemplo de requests
+
+Colecciones disponibles:
+- `postman/auth-service.postman_collection.json`
+- `postman/user-service.postman_collection.json`
+- `postman/notificaciones-service.postman_collection.json`
+
+### 🧪 **Para Testing de Endpoints**
+Consulta: **[postman/README.md](postman/README.md)**
+- Importar Postman collection
+- Generar JWT mock token
+- 4 testing workflows
+- Ejemplo de requests
+
+<<<<<<< HEAD
+## 🎯 Microservicios
+=======
+- `postman/auth-service.postman_collection.json`
+- `postman/notificaciones-service.postman_collection.json`
+>>>>>>> eb65e2cf7b8d021c68c5fd1f069170e90726b530
 
 ## 🎯 Microservicios
 
@@ -75,6 +112,14 @@ Consulta: **[postman/README.md](postman/README.md)**
 - **Swagger**: `http://localhost:5000/swagger`
 - **Puerto**: 5000
 - **BD**: `localhost:5434` (host), `user-db:5432` (Docker)
+
+### Notificaciones Service (`microservices/notificaciones-service`)
+- 🟢 **Status**: Operativo
+- **Stack**: Cloudflare Workers (TypeScript) + KV Storage
+- **Runtime**: Serverless minimalista sin frameworks HTTP
+- **Endpoints**: Crear, listar por usuario, marcar como leída, health
+- **Desarrollo local**: `http://127.0.0.1:8787` (wrangler dev)
+- **Configuración**: `wrangler.toml` con namespace KV
 
 ## 🔌 Arquitectura
 

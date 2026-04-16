@@ -1,6 +1,10 @@
 using PedidosCampus.UserService.Data;
 using PedidosCampus.UserService.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,20 +22,74 @@ builder.Services.AddDbContext<UserServiceDbContext>(options =>
 // Servicios de negocio
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
+// JWT Authentication (firma + expiracion)
+var accessTokenSecret = builder.Configuration["ACCESS_TOKEN_SECRET"]
+    ?? builder.Configuration["Jwt:AccessTokenSecret"];
+
+if (string.IsNullOrWhiteSpace(accessTokenSecret))
+{
+    throw new InvalidOperationException("Missing JWT access token secret. Configure ACCESS_TOKEN_SECRET or Jwt:AccessTokenSecret.");
+}
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(accessTokenSecret)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            RoleClaimType = "role",
+            NameClaimType = "sub"
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 // Controllers y OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "User Service API",
         Version = "v1",
         Description = "Microservicio de perfiles de usuario y repartidor para PedidosCampus",
-        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        Contact = new OpenApiContact
         {
             Name = "PedidosCampus Team",
             Email = "equipo@pedidoscampus.local"
+        }
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT access token. Formato: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
     });
 });
@@ -67,6 +125,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 // Aplica migraciones pendientes al iniciar (desarrollo)
@@ -80,4 +140,3 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
-

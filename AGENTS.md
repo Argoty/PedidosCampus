@@ -1,37 +1,43 @@
 # AGENTS.md
 
-## Estado verificado del repo (hoy)
-- Ya no es solo documental: existe un microservicio ejecutable en `microservices/auth-service` (NestJS + Prisma + Jest + Dockerfile).
-- Orquestacion local en raiz con `docker-compose.yml` (servicios `auth-db` y `auth-service`).
-- Colecciones Postman centralizadas en `postman/` (actualmente `postman/auth-service.postman_collection.json`).
+## Estado real del repo (verificado en código/config)
+- Stack ejecutable con Docker Compose en raíz: `auth-service` (NestJS) + `user-service` (ASP.NET 8) y sus BDs (`auth-db`, `user-db`).
+- `order-service` y `restaurant-service` están en estado placeholder (solo README corto).
+- No hay workflows en `.github/workflows/` ni `opencode.json` en el repo.
 
-## Fuentes de verdad (orden recomendado)
-1. Configuracion ejecutable: `docker-compose.yml`, `microservices/auth-service/package.json`, `microservices/auth-service/Dockerfile`.
-2. `README.md` (raiz) y `microservices/auth-service/README.md` para flujo operativo.
-3. `docs/RequisitosFuncionales.md` para alcance funcional academico.
+## Fuentes de verdad (en este orden)
+1. `docker-compose.yml` (qué corre realmente en local).
+2. `microservices/auth-service/package.json` + `Dockerfile` + `prisma/auth-schema.prisma`.
+3. `microservices/user-service/Program.cs` + `UserService.csproj` + `Dockerfile`.
+4. READMEs solo para contexto; si difieren de scripts/config, gana lo ejecutable.
 
-Si hay conflicto entre docs y scripts/config reales, priorizar scripts/config reales.
+## Comandos verificados (no adivinar)
+- Levantar todo: `docker compose --env-file .env.docker up --build`
+- Bajar todo: `docker compose --env-file .env.docker down`
+- Logs: `docker compose --env-file .env.docker logs -f auth-service user-service auth-db user-db`
 
-## Comandos que si estan verificados
-- Levantar stack local (recomendado): `docker compose --env-file .env.docker up --build`
-- Bajar stack: `docker compose --env-file .env.docker down`
-- Ver logs: `docker compose --env-file .env.docker logs -f auth-service auth-db`
-- Auth local sin Docker (desde `microservices/auth-service`):
-  - `npm install`
-  - `npm run prisma:generate`
-  - `npm run prisma:push`
-  - `npm run start:dev`
-- Verificacion minima del micro Auth (desde `microservices/auth-service`):
-  - `npm run build`
-  - `npm test`
+### Auth service (desde `microservices/auth-service`)
+- Setup local: `npm install && npm run prisma:generate && npm run prisma:push && npm run start:dev`
+- Tests: `npm test`
+- Build output real para prod: `dist/src/main.js` (script `start:prod`).
 
-## Gotchas importantes (evitan errores comunes)
-- `docker-compose.yml` usa variables sensibles de `.env.docker` (`AUTH_DB_PASSWORD`, `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`). Si no pasas `--env-file .env.docker`, Compose puede arrancar con valores vacios.
-- Si cambias `AUTH_DB_PASSWORD` despues de haber inicializado Postgres, el volumen persistente conserva la clave anterior y falla con `P1000`/`password authentication failed`.
-  - Solucion de desarrollo: `docker compose --env-file .env.docker down -v` y volver a levantar.
-- En este proyecto el build Nest genera entrada en `dist/src/main.js` (no `dist/main.js`).
-- Puerto host de Postgres Docker es `5433` para evitar conflicto con Postgres local en `5432`.
+### User service (desde `microservices/user-service`)
+- Setup local: `dotnet restore && dotnet run` (o `dotnet watch run`)
+- Tests: `dotnet test`
+- Migraciones: en `Development`, `Program.cs` ejecuta `dbContext.Database.Migrate()` al iniciar.
 
-## Alcance academico a respetar
-- Primera entrega: microservicios sin integracion activa entre ellos.
-- No asumir Gateway operativo ni RabbitMQ conectado mientras no existan artefactos ejecutables que lo demuestren.
+## Gotchas que hacen perder tiempo
+- Para Compose, usar SIEMPRE `--env-file .env.docker`: `AUTH_DB_PASSWORD`, `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET` no tienen fallback seguro.
+- Si cambiás `AUTH_DB_PASSWORD` o `USER_DB_PASSWORD` con volúmenes ya creados, puede fallar autenticación de Postgres. Reset dev: `docker compose --env-file .env.docker down -v`.
+- Puertos host reales:
+  - Auth API `3001`, Auth DB `5433`
+  - User API `5000`, User DB `5434`
+- `auth-service` en Docker ejecuta `prisma db push` al arrancar (en `CMD`), no usa migraciones versionadas.
+
+## Límites de alcance (académico)
+- No asumir gateway, RabbitMQ ni integración entre microservicios como “hecho” mientras no haya artefactos ejecutables que lo respalden.
+
+## Puntos de entrada y límites por servicio
+- Auth: `src/main.ts` → `AppModule` → `AuthModule` (`/auth/*`).
+- User: `Program.cs` + `src/Controllers/ProfilesController.cs` (`/api/profiles/*`).
+- Tests de user-service usan EF InMemory (`Tests/ProfileServiceTests.cs`), no PostgreSQL real.

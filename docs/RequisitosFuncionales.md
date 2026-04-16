@@ -11,7 +11,7 @@
 
 PedidosCampus es una plataforma de entregas y pedidos a domicilio enfocada en el entorno universitario. Permite a estudiantes y personal del campus realizar pedidos a restaurantes, tiendas y servicios locales cercanos, los cuales son atendidos por repartidores registrados en la plataforma.
 
-El sistema está construido bajo una arquitectura de **microservicios asíncronos**, donde cada dominio del negocio es un servicio independiente con su propia base de datos, tecnología y contenedor Docker. La comunicación entre servicios se realiza mediante un **broker de mensajería (RabbitMQ)**, garantizando desacoplamiento y resiliencia. Un **API Gateway** centraliza el acceso, aplica políticas de seguridad y enruta las peticiones a cada microservicio.
+El sistema está construido bajo una arquitectura de **microservicios asíncronos**, donde cada dominio del negocio es un servicio independiente con su propia base de datos y tecnología. Los servicios con estado persistente se ejecutan en contenedores Docker para desarrollo local, y el microservicio de Notificaciones opera en un runtime serverless nativo (Cloudflare Workers). La comunicación entre servicios se realiza mediante un **broker de mensajería (RabbitMQ)**, garantizando desacoplamiento y resiliencia. Un **API Gateway** centraliza el acceso, aplica políticas de seguridad y enruta las peticiones a cada microservicio.
 
 La plataforma cuenta con tres tipos de actores: **usuarios** (realizan pedidos), **repartidores** (aceptan y entregan pedidos) y **administradores** (gestionan la plataforma y acceden al agente de IA). Un agente de inteligencia artificial integrado asiste al administrador en la toma de decisiones sobre el estado del negocio.
 
@@ -36,12 +36,12 @@ La plataforma cuenta con tres tipos de actores: **usuarios** (realizan pedidos),
 | Usuarios | C# .NET 8 | PostgreSQL | Clientes y repartidores |
 | Restaurantes | Python + FastAPI | PostgreSQL | Menús y productos |
 | Pedidos | Go + Gin | PostgreSQL | Core del negocio |
-| Notificaciones | Python + FastAPI | MongoDB | Serverless (AWS Lambda / GCF) |
+| Notificaciones | TypeScript (Cloudflare Workers) | Cloudflare KV | Serverless |
 | Calificaciones | Rust + Actix-web | PostgreSQL | Reviews y promedios |
 | Agente IA | Python + FastAPI | — | LLM integrado para admin |
 
 **Broker de mensajería:** RabbitMQ  
-**Containerización:** Docker + Docker Compose  
+**Ejecución local:** Docker + Docker Compose (servicios en contenedor) y Wrangler para servicios serverless  
 **Frontend:** [Tecnología por definir — React / Next.js sugerido]
 
 ---
@@ -95,7 +95,7 @@ La plataforma cuenta con tres tipos de actores: **usuarios** (realizan pedidos),
 | RF-PED-07 | El usuario debe poder ver su historial de pedidos |
 | RF-PED-08 | El administrador debe poder ver todos los pedidos activos y el historial general |
 
-### RF-NOTIF — Microservicio de Notificaciones (Serverless)
+### RF-NOTIF — Microservicio de Notificaciones (Cloudflare Workers + KV)
 
 | ID | Requisito |
 |---|---|
@@ -139,8 +139,8 @@ La plataforma cuenta con tres tipos de actores: **usuarios** (realizan pedidos),
 
 | ID | Requisito |
 |---|---|
-| RNF-01 | Cada microservicio debe estar contenido en su propio Dockerfile |
-| RNF-02 | El proyecto debe poder levantarse localmente con un único comando usando Docker Compose |
+| RNF-01 | Cada microservicio con runtime de servidor debe tener su Dockerfile; los microservicios serverless deben usar configuración declarativa de despliegue (Wrangler) |
+| RNF-02 | El proyecto debe poder ejecutarse localmente con Docker Compose (servicios en contenedor) y con `wrangler dev` para el servicio serverless de Notificaciones |
 | RNF-03 | Cada microservicio debe tener pruebas unitarias con cobertura mínima de los endpoints principales |
 | RNF-04 | La comunicación asíncrona entre servicios debe realizarse exclusivamente mediante RabbitMQ |
 | RNF-05 | Las contraseñas deben almacenarse con hash bcrypt, nunca en texto plano |
@@ -157,7 +157,7 @@ Para la primera entrega se presentarán los siguientes componentes funcionales, 
 - Microservicio Usuarios (C# .NET) — CRUD básico
 - Microservicio Restaurantes (FastAPI) — CRUD restaurantes y menú
 - Microservicio Pedidos (Go) — Ciclo de estados del pedido
-- Microservicio Notificaciones (FastAPI Serverless) — Registro de notificaciones
+- Microservicio Notificaciones (Cloudflare Workers + KV) — Registro y lectura de notificaciones serverless
 - Todos los microservicios dockerizados
 - Pruebas unitarias por microservicio
 - Documentación completa (requisitos + diagramas)

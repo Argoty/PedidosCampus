@@ -1,10 +1,14 @@
 # ============================================================
 # ENVIRONMENT & SECRETS
 # ============================================================
+# CRITICAL: Match ALL env files to prevent credential leaks
 .env
+.env.*
 .env.local
 .env.*.local
 .env.docker
+!.env.example
+!.env.*.example
 
 # ============================================================
 # OS & IDE

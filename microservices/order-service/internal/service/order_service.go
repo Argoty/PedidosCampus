@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/PedidosCampus/order-service/internal/dto"
 	"github.com/PedidosCampus/order-service/internal/model"
@@ -39,9 +40,10 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 	items := make([]model.PedidoItem, len(req.Items))
 
 	for i, item := range req.Items {
+		fieldIndex := strconv.Itoa(i)
 		if item.Cantidad < 1 || item.Cantidad > 999 {
 			return nil, errors.ErrValidation.WithDetails(map[string]interface{}{
-				"field": "items[" + string(rune(i)) + "].cantidad",
+				"field": "items[" + fieldIndex + "].cantidad",
 				"issue": "must be between 1 and 999",
 				"value": item.Cantidad,
 			})
@@ -49,7 +51,7 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 
 		if item.PrecioUnit < 0 || item.PrecioUnit > 99999.99 {
 			return nil, errors.ErrValidation.WithDetails(map[string]interface{}{
-				"field": "items[" + string(rune(i)) + "].precioUnit",
+				"field": "items[" + fieldIndex + "].precioUnit",
 				"issue": "must be between 0 and 99999.99",
 				"value": item.PrecioUnit,
 			})
@@ -148,16 +150,19 @@ func (s *orderServiceImpl) ListOrders(ctx context.Context, userID uuid.UUID, rol
 	}
 
 	// For regular users, always filter by their own ID
-	filterUserID := userID
-	if role == "admin" && query.UserID != "" {
-		filterUserID, _ = uuid.Parse(query.UserID)
+	if role == "admin" {
+		return s.repo.ListOrders(ctx, query.Limit, query.Offset, query.Estado, query.RestauranteID, query.UserID)
 	}
 
-	return s.repo.ListOrdersByUser(ctx, filterUserID, query.Limit, query.Offset, query.Estado)
+	return s.repo.ListOrdersByUser(ctx, userID, query.Limit, query.Offset, query.Estado, query.RestauranteID)
 }
 
 // ListActiveOrders retrieves all active orders (admin only)
-func (s *orderServiceImpl) ListActiveOrders(ctx context.Context, query dto.ListOrdersQuery) ([]model.Pedido, int64, error) {
+func (s *orderServiceImpl) ListActiveOrders(ctx context.Context, role string, query dto.ListOrdersQuery) ([]model.Pedido, int64, error) {
+	if role != "admin" {
+		return nil, 0, errors.ErrForbidden
+	}
+
 	// Default pagination
 	if query.Limit == 0 {
 		query.Limit = 10
@@ -166,11 +171,21 @@ func (s *orderServiceImpl) ListActiveOrders(ctx context.Context, query dto.ListO
 		query.Limit = 100
 	}
 
-	return s.repo.ListActiveOrders(ctx, query.Limit, query.Offset, query.Estado, query.RestauranteID, "")
+	return s.repo.ListActiveOrders(ctx, query.Limit, query.Offset, query.Estado, query.RestauranteID, query.RepartidorID)
 }
 
 // ListDelivererOrders retrieves orders assigned to a specific deliverer
-func (s *orderServiceImpl) ListDelivererOrders(ctx context.Context, repartidorID uuid.UUID, query dto.ListOrdersQuery) ([]model.Pedido, int64, error) {
+func (s *orderServiceImpl) ListDelivererOrders(ctx context.Context, actorID uuid.UUID, role string, repartidorID uuid.UUID, query dto.ListOrdersQuery) ([]model.Pedido, int64, error) {
+	if role != "admin" && role != "repartidor" {
+		return nil, 0, errors.ErrForbidden
+	}
+
+	if role == "repartidor" && actorID != repartidorID {
+		return nil, 0, errors.ErrForbidden.WithDetails(map[string]interface{}{
+			"issue": "deliverer can only list own orders",
+		})
+	}
+
 	// Default pagination
 	if query.Limit == 0 {
 		query.Limit = 10
@@ -223,24 +238,27 @@ func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, r
 }
 
 // UpdateOrderStatus updates the order status
-func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, repartidorID uuid.UUID, req dto.UpdateOrderStatusRequest) (*model.Pedido, error) {
+func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, actorID uuid.UUID, role string, req dto.UpdateOrderStatusRequest) (*model.Pedido, error) {
 	// Get current order to check authorization
 	currentPedido, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only assigned deliverer can update
-	if currentPedido.RepartidorID == nil || *currentPedido.RepartidorID != repartidorID {
+	// Admin can update any order. Repartidor only assigned order.
+	if role != "admin" && (currentPedido.RepartidorID == nil || *currentPedido.RepartidorID != actorID) {
 		return nil, errors.ErrForbidden.WithDetails(map[string]interface{}{
 			"issue": "only assigned deliverer can update status",
 		})
+	}
+	if role != "admin" && role != "repartidor" {
+		return nil, errors.ErrForbidden
 	}
 
 	newEstado := model.EstadoPedido(req.ToEstado)
 
 	// Update status
-	updatedPedido, err := s.repo.UpdateOrderStatus(ctx, orderID, newEstado, &repartidorID)
+	updatedPedido, err := s.repo.UpdateOrderStatus(ctx, orderID, newEstado, &actorID)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +271,7 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 			OrderID:    updatedPedido.ID.String(),
 			FromEstado: string(currentPedido.Estado),
 			ToEstado:   string(updatedPedido.Estado),
-			ChangedBy:  repartidorID.String(),
+			ChangedBy:  actorID.String(),
 			Estado:     string(updatedPedido.Estado),
 			Timestamp:  updatedPedido.UpdatedAt.String(),
 		}
@@ -268,7 +286,7 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 					EventType:     "order.delivered",
 					OrderID:       updatedPedido.ID.String(),
 					UserID:        updatedPedido.UserID.String(),
-					RepartidorID:  repartidorID.String(),
+					RepartidorID:  actorID.String(),
 					RestauranteID: updatedPedido.RestauranteID.String(),
 					DeliveredAt:   updatedPedido.UpdatedAt.String(),
 				}
@@ -317,6 +335,15 @@ func (s *orderServiceImpl) CancelOrder(ctx context.Context, orderID uuid.UUID, u
 }
 
 // GetOrderHistory retrieves the state change history of an order
-func (s *orderServiceImpl) GetOrderHistory(ctx context.Context, orderID uuid.UUID) ([]model.PedidoEstadoLog, error) {
+func (s *orderServiceImpl) GetOrderHistory(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, role string) ([]model.PedidoEstadoLog, error) {
+	pedido, err := s.repo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	if role != "admin" && pedido.UserID != userID && (pedido.RepartidorID == nil || *pedido.RepartidorID != userID) {
+		return nil, errors.ErrForbidden
+	}
+
 	return s.repo.GetOrderHistory(ctx, orderID)
 }

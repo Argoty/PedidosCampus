@@ -107,7 +107,50 @@ services:
       - "8001:8001"
     restart: unless-stopped
 
+  order-db:
+    image: postgres:16-alpine
+    container_name: pedidoscampus-order-db
+    environment:
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:-order_password}
+      POSTGRES_DB: order_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - order_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_user -d order_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    container_name: pedidoscampus-order-service
+    build:
+      context: ./microservices/order-service
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: 8002
+      SERVER_ENV: development
+      DATABASE_URL: postgres://order_user:${ORDER_DB_PASSWORD:-order_password}@order-db:5432/order_db?sslmode=disable
+      DATABASE_LOG_LEVEL: info
+      JWT_SECRET: ${ACCESS_TOKEN_SECRET}
+      JWT_EXPIRATION_HOURS: 24
+      RABBITMQ_URL: ""
+      RABBITMQ_EXCHANGE: orders
+      RABBITMQ_QUEUE_PREFIX: order-service
+      DELIVERY_COST: 2
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+    depends_on:
+      order-db:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
 volumes:
   auth_postgres_data:
   user_postgres_data:
   restaurant_postgres_data:
+  order_postgres_data:

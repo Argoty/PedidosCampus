@@ -28,7 +28,7 @@ type AcceptOrderRequest struct {
 
 // UpdateOrderStatusRequest represents the request to update order status
 type UpdateOrderStatusRequest struct {
-	ToEstado       string `json:"toEstado" binding:"required,oneof=pendiente aceptado en_camino entregado cancelado"`
+	ToEstado       string `json:"toEstado" binding:"required,oneof=en_camino entregado"`
 	IdempotencyKey string `json:"idempotencyKey"`
 }
 
@@ -92,5 +92,6 @@ type ListOrdersQuery struct {
 	Offset        int    `form:"offset,default=0"`
 	Estado        string `form:"estado"`
 	RestauranteID string `form:"restauranteId"`
+	RepartidorID  string `form:"repartidorId"`
 	UserID        string `form:"userId"`
 }

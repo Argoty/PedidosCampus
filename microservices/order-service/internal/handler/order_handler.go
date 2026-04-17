@@ -187,7 +187,13 @@ func (h *OrderHandler) ListActiveOrders(c *gin.Context) {
 		return
 	}
 
-	pedidos, total, err := h.service.ListActiveOrders(c.Request.Context(), query)
+	role, err := middleware.GetRole(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	pedidos, total, err := h.service.ListActiveOrders(c.Request.Context(), role, query)
 	if err != nil {
 		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
 			c.JSON(appErr.HTTPStatus, appErr)
@@ -241,7 +247,19 @@ func (h *OrderHandler) ListDelivererOrders(c *gin.Context) {
 		return
 	}
 
-	pedidos, total, err := h.service.ListDelivererOrders(c.Request.Context(), repartidorID, query)
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	role, err := middleware.GetRole(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	pedidos, total, err := h.service.ListDelivererOrders(c.Request.Context(), userID, role, repartidorID, query)
 	if err != nil {
 		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
 			c.JSON(appErr.HTTPStatus, appErr)
@@ -348,7 +366,13 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	pedido, err := h.service.UpdateOrderStatus(c.Request.Context(), orderID, repartidorID, req)
+	role, err := middleware.GetRole(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	pedido, err := h.service.UpdateOrderStatus(c.Request.Context(), orderID, repartidorID, role, req)
 	if err != nil {
 		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
 			c.JSON(appErr.HTTPStatus, appErr)
@@ -431,7 +455,19 @@ func (h *OrderHandler) GetOrderHistory(c *gin.Context) {
 		return
 	}
 
-	history, err := h.service.GetOrderHistory(c.Request.Context(), orderID)
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	role, err := middleware.GetRole(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	history, err := h.service.GetOrderHistory(c.Request.Context(), orderID, userID, role)
 	if err != nil {
 		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
 			c.JSON(appErr.HTTPStatus, appErr)

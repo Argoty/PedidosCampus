@@ -16,7 +16,10 @@ type OrderRepository interface {
 	GetOrderByID(ctx context.Context, orderID uuid.UUID) (*model.Pedido, error)
 
 	// ListOrdersByUser retrieves orders for a specific user
-	ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado string) ([]model.Pedido, int64, error)
+	ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado, restauranteID string) ([]model.Pedido, int64, error)
+
+	// ListOrders retrieves orders with optional filters (admin use-case)
+	ListOrders(ctx context.Context, limit, offset int, estado, restauranteID, userID string) ([]model.Pedido, int64, error)
 
 	// ListActiveOrders retrieves all active orders (not entregado or cancelado)
 	ListActiveOrders(ctx context.Context, limit, offset int, estado, restauranteID, repartidorID string) ([]model.Pedido, int64, error)

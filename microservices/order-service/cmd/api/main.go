@@ -107,8 +107,8 @@ func main() {
 		// Accept order (repartidor)
 		protected.POST("/:orderId/accept", middleware.RequireRole("repartidor"), orderHandler.AcceptOrder)
 
-		// Update status (repartidor)
-		protected.POST("/:orderId/status", middleware.RequireRole("repartidor"), orderHandler.UpdateOrderStatus)
+		// Update status (repartidor, admin)
+		protected.POST("/:orderId/status", middleware.RequireRole("repartidor", "admin"), orderHandler.UpdateOrderStatus)
 
 		// Cancel order (usuario, admin)
 		protected.POST("/:orderId/cancel", orderHandler.CancelOrder)

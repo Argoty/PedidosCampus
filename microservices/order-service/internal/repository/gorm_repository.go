@@ -94,7 +94,7 @@ func (r *GORMOrderRepository) GetOrderByID(ctx context.Context, orderID uuid.UUI
 }
 
 // ListOrdersByUser retrieves orders for a specific user
-func (r *GORMOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado string) ([]model.Pedido, int64, error) {
+func (r *GORMOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado, restauranteID string) ([]model.Pedido, int64, error) {
 	var pedidos []model.Pedido
 	var total int64
 
@@ -102,6 +102,9 @@ func (r *GORMOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.
 
 	if estado != "" {
 		query = query.Where("estado = ?", estado)
+	}
+	if restauranteID != "" {
+		query = query.Where("restaurante_id = ?", restauranteID)
 	}
 
 	// Count total
@@ -112,6 +115,43 @@ func (r *GORMOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.
 	}
 
 	// Fetch paginated results
+	if err := query.
+		Preload("Items").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&pedidos).Error; err != nil {
+		return nil, 0, errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
+
+	return pedidos, total, nil
+}
+
+// ListOrders retrieves orders with optional filters (admin use-case)
+func (r *GORMOrderRepository) ListOrders(ctx context.Context, limit, offset int, estado, restauranteID, userID string) ([]model.Pedido, int64, error) {
+	var pedidos []model.Pedido
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&model.Pedido{})
+
+	if estado != "" {
+		query = query.Where("estado = ?", estado)
+	}
+	if restauranteID != "" {
+		query = query.Where("restaurante_id = ?", restauranteID)
+	}
+	if userID != "" {
+		query = query.Where("user_id = ?", userID)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
+
 	if err := query.
 		Preload("Items").
 		Order("created_at DESC").
@@ -227,6 +267,8 @@ func (r *GORMOrderRepository) UpdateOrderStatus(ctx context.Context, orderID uui
 		})
 	}
 
+	previousEstado := pedido.Estado
+
 	// Update status
 	if err := tx.Model(&pedido).Update("estado", newEstado).Error; err != nil {
 		tx.Rollback()
@@ -239,7 +281,7 @@ func (r *GORMOrderRepository) UpdateOrderStatus(ctx context.Context, orderID uui
 	stateLog := model.PedidoEstadoLog{
 		ID:         uuid.New(),
 		PedidoID:   orderID,
-		FromEstado: &pedido.Estado,
+		FromEstado: &previousEstado,
 		ToEstado:   newEstado,
 		ChangedBy:  changedBy,
 	}
@@ -292,6 +334,8 @@ func (r *GORMOrderRepository) AcceptOrder(ctx context.Context, orderID, repartid
 		return nil, errors.ErrOrderNotPending
 	}
 
+	previousEstado := pedido.Estado
+
 	// Update deliverer and status
 	if err := tx.Model(&pedido).Updates(map[string]interface{}{
 		"repartidor_id": repartidorID,
@@ -307,7 +351,7 @@ func (r *GORMOrderRepository) AcceptOrder(ctx context.Context, orderID, repartid
 	stateLog := model.PedidoEstadoLog{
 		ID:         uuid.New(),
 		PedidoID:   orderID,
-		FromEstado: &pedido.Estado,
+		FromEstado: &previousEstado,
 		ToEstado:   model.EstadoAceptado,
 		ChangedBy:  &repartidorID,
 	}
@@ -363,6 +407,8 @@ func (r *GORMOrderRepository) CancelOrder(ctx context.Context, orderID uuid.UUID
 		})
 	}
 
+	previousEstado := pedido.Estado
+
 	// Update status to cancelado and set cancelled timestamp
 	now := time.Now()
 	if err := tx.Model(&pedido).Updates(map[string]interface{}{
@@ -379,7 +425,7 @@ func (r *GORMOrderRepository) CancelOrder(ctx context.Context, orderID uuid.UUID
 	stateLog := model.PedidoEstadoLog{
 		ID:         uuid.New(),
 		PedidoID:   orderID,
-		FromEstado: &pedido.Estado,
+		FromEstado: &previousEstado,
 		ToEstado:   model.EstadoCancelado,
 	}
 

@@ -20,20 +20,20 @@ type OrderService interface {
 	ListOrders(ctx context.Context, userID uuid.UUID, role string, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
 
 	// ListActiveOrders retrieves all active orders (admin only)
-	ListActiveOrders(ctx context.Context, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
+	ListActiveOrders(ctx context.Context, role string, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
 
 	// ListDelivererOrders retrieves orders assigned to a specific deliverer
-	ListDelivererOrders(ctx context.Context, repartidorID uuid.UUID, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
+	ListDelivererOrders(ctx context.Context, actorID uuid.UUID, role string, repartidorID uuid.UUID, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
 
 	// AcceptOrder accepts an order (deliverer assigns themselves)
 	AcceptOrder(ctx context.Context, orderID uuid.UUID, repartidorID uuid.UUID) (*model.Pedido, error)
 
 	// UpdateOrderStatus updates the order status
-	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, repartidorID uuid.UUID, req dto.UpdateOrderStatusRequest) (*model.Pedido, error)
+	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, actorID uuid.UUID, role string, req dto.UpdateOrderStatusRequest) (*model.Pedido, error)
 
 	// CancelOrder cancels an order
 	CancelOrder(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, role string) (*model.Pedido, error)
 
 	// GetOrderHistory retrieves the state change history of an order
-	GetOrderHistory(ctx context.Context, orderID uuid.UUID) ([]model.PedidoEstadoLog, error)
+	GetOrderHistory(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, role string) ([]model.PedidoEstadoLog, error)
 }

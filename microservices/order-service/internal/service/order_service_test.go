@@ -42,13 +42,25 @@ func (m *MockOrderRepository) GetOrderByID(ctx context.Context, orderID uuid.UUI
 	return nil, errors.ErrOrderNotFound
 }
 
-func (m *MockOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado string) ([]model.Pedido, int64, error) {
+func (m *MockOrderRepository) ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit, offset int, estado, restauranteID string) ([]model.Pedido, int64, error) {
 	var result []model.Pedido
 	for _, order := range m.orders {
 		if order.UserID == userID {
-			if estado == "" || string(order.Estado) == estado {
+			if (estado == "" || string(order.Estado) == estado) && (restauranteID == "" || order.RestauranteID.String() == restauranteID) {
 				result = append(result, *order)
 			}
+		}
+	}
+	return result, int64(len(result)), nil
+}
+
+func (m *MockOrderRepository) ListOrders(ctx context.Context, limit, offset int, estado, restauranteID, userID string) ([]model.Pedido, int64, error) {
+	var result []model.Pedido
+	for _, order := range m.orders {
+		if (estado == "" || string(order.Estado) == estado) &&
+			(restauranteID == "" || order.RestauranteID.String() == restauranteID) &&
+			(userID == "" || order.UserID.String() == userID) {
+			result = append(result, *order)
 		}
 	}
 	return result, int64(len(result)), nil
@@ -264,7 +276,7 @@ func TestUpdateOrderStatus_InvalidTransition(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := svc.UpdateOrderStatus(ctx, orderID, repartidorID, req)
+	_, err := svc.UpdateOrderStatus(ctx, orderID, repartidorID, "repartidor", req)
 
 	assert.Error(t, err)
 }
@@ -313,4 +325,81 @@ func TestCancelOrder_Error_NotPending(t *testing.T) {
 	_, err := svc.CancelOrder(ctx, orderID, userID, "usuario")
 
 	assert.Error(t, err)
+}
+
+func TestListActiveOrders_ForbiddenForNonAdmin(t *testing.T) {
+	repo := NewMockOrderRepository()
+	publisher := rabbitmq.NewMockPublisher()
+	svc := NewOrderService(repo, publisher, 2.0)
+
+	ctx := context.Background()
+	_, _, err := svc.ListActiveOrders(ctx, "usuario", dto.ListOrdersQuery{Limit: 10, Offset: 0})
+
+	assert.Error(t, err)
+	assert.Equal(t, errors.ErrForbidden, err)
+}
+
+func TestListDelivererOrders_ForbiddenForOtherDeliverer(t *testing.T) {
+	repo := NewMockOrderRepository()
+	publisher := rabbitmq.NewMockPublisher()
+	svc := NewOrderService(repo, publisher, 2.0)
+
+	actorID := uuid.New()
+	requestedDelivererID := uuid.New()
+
+	ctx := context.Background()
+	_, _, err := svc.ListDelivererOrders(ctx, actorID, "repartidor", requestedDelivererID, dto.ListOrdersQuery{Limit: 10, Offset: 0})
+
+	assert.Error(t, err)
+	appErr, ok := err.(*errors.AppError)
+	assert.True(t, ok)
+	assert.Equal(t, errors.Forbidden, appErr.Code)
+}
+
+func TestGetOrderHistory_ForbiddenForUnrelatedUser(t *testing.T) {
+	repo := NewMockOrderRepository()
+	publisher := rabbitmq.NewMockPublisher()
+	svc := NewOrderService(repo, publisher, 2.0)
+
+	orderID := uuid.New()
+	ownerID := uuid.New()
+	otherUserID := uuid.New()
+
+	repo.orders[orderID] = &model.Pedido{
+		ID:     orderID,
+		UserID: ownerID,
+		Estado: model.EstadoPendiente,
+	}
+
+	ctx := context.Background()
+	_, err := svc.GetOrderHistory(ctx, orderID, otherUserID, "usuario")
+
+	assert.Error(t, err)
+	assert.Equal(t, errors.ErrForbidden, err)
+}
+
+func TestListOrders_AdminCanListAllWithFilters(t *testing.T) {
+	repo := NewMockOrderRepository()
+	publisher := rabbitmq.NewMockPublisher()
+	svc := NewOrderService(repo, publisher, 2.0)
+
+	userA := uuid.New()
+	userB := uuid.New()
+	restA := uuid.New()
+	restB := uuid.New()
+
+	repo.orders[uuid.New()] = &model.Pedido{ID: uuid.New(), UserID: userA, RestauranteID: restA, Estado: model.EstadoPendiente}
+	repo.orders[uuid.New()] = &model.Pedido{ID: uuid.New(), UserID: userB, RestauranteID: restB, Estado: model.EstadoAceptado}
+
+	ctx := context.Background()
+	orders, total, err := svc.ListOrders(ctx, uuid.New(), "admin", dto.ListOrdersQuery{
+		Limit:  10,
+		Offset: 0,
+		UserID: userB.String(),
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Len(t, orders, 1)
+	assert.Equal(t, userB, orders[0].UserID)
 }

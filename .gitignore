@@ -1,9 +1,11 @@
 # Entornos locales de docker compose
 .env.docker
+.env
 
 # Basicos
 .DS_Store
 *.log
+bin/
 
 # .NET configuration (secrets should not be tracked)
 appsettings.json

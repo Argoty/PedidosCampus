@@ -7,11 +7,11 @@ services:
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
       POSTGRES_DB: auth_db
     ports:
-      - '5433:5432'
+      - "5433:5432"
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U auth_user -d auth_db']
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,13 +28,13 @@ services:
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       BCRYPT_SALT_ROUNDS: 10
-      COOKIE_SECURE: 'false'
+      COOKIE_SECURE: "false"
       CORS_ORIGIN: http://localhost:3000
     depends_on:
       auth-db:
         condition: service_healthy
     ports:
-      - '3001:3001'
+      - "3001:3001"
     restart: unless-stopped
 
   user-db:
@@ -45,11 +45,11 @@ services:
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-user_password}
       POSTGRES_DB: user_db
     ports:
-      - '5434:5432'
+      - "5434:5432"
     volumes:
       - user_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user_user -d user_db']
+      test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,16 +60,54 @@ services:
       context: ./microservices/user-service
       dockerfile: Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: ${USER_SERVICE_ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: ${USER_SERVICE_ASPNETCORE_URLS:-http://+:5000}
       ConnectionStrings__DefaultConnection: "Host=user-db;Port=5432;Database=user_db;Username=user_user;Password=${USER_DB_PASSWORD:-user_password}"
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      Jwt__AccessTokenSecret: ${ACCESS_TOKEN_SECRET}
     depends_on:
       user-db:
         condition: service_healthy
     ports:
-      - '5000:5000'
+      - "5000:5000"
+    restart: unless-stopped
+
+  restaurant-db:
+    image: postgres:16-alpine
+    container_name: pedidoscampus-restaurant-db
+    environment:
+      POSTGRES_USER: restaurant_user
+      POSTGRES_PASSWORD: ${RESTAURANT_DB_PASSWORD:-restaurant_password}
+      POSTGRES_DB: restaurant_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - restaurant_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U restaurant_user -d restaurant_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  restaurant-service:
+    container_name: pedidoscampus-restaurant-service
+    build:
+      context: ./microservices/restaurant-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://restaurant_user:${RESTAURANT_DB_PASSWORD:-restaurant_password}@restaurant-db:5432/restaurant_db
+      SECRET_KEY: ${ACCESS_TOKEN_SECRET}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      DEBUG: "false"
+    depends_on:
+      restaurant-db:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
     restart: unless-stopped
 
 volumes:
   auth_postgres_data:
   user_postgres_data:
+  restaurant_postgres_data:

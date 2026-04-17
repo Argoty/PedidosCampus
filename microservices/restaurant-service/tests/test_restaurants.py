@@ -26,6 +26,25 @@ class TestRestaurantes:
         assert data["is_active"] is True
         assert "id" in data
 
+    async def test_create_restaurante_admin_accepts_imagen_url_camelcase(
+        self, client, admin_token
+    ):
+        """Test creating restaurante with imagenUrl alias (camelCase)."""
+        response = await client.post(
+            "/api/v1/restaurants",
+            json={
+                "nombre": "Alias Test",
+                "descripcion": "Alias field mapping",
+                "direccion": "Cra 100 # 1-20",
+                "categoria": "Alias",
+                "imagenUrl": "https://example.com/alias.jpg",
+            },
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["imagen_url"] == "https://example.com/alias.jpg"
+
     async def test_create_restaurante_unauthorized(self, client, user_token):
         """Test that non-admin cannot create restaurante."""
         response = await client.post(

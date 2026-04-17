@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, AliasChoices, model_validator
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -12,7 +12,11 @@ class RestauranteBase(BaseModel):
     descripcion: Optional[str] = Field(None, max_length=1000)
     direccion: str = Field(..., min_length=1, max_length=500)
     categoria: str = Field(..., min_length=1, max_length=100)
-    imagen_url: Optional[str] = Field(None, max_length=500)
+    imagen_url: Optional[str] = Field(
+        None,
+        max_length=500,
+        validation_alias=AliasChoices("imagen_url", "imagenUrl"),
+    )
 
 
 class RestauranteCreate(RestauranteBase):
@@ -28,7 +32,11 @@ class RestauranteUpdate(BaseModel):
     descripcion: Optional[str] = Field(None, max_length=1000)
     direccion: Optional[str] = Field(None, min_length=1, max_length=500)
     categoria: Optional[str] = Field(None, min_length=1, max_length=100)
-    imagen_url: Optional[str] = Field(None, max_length=500)
+    imagen_url: Optional[str] = Field(
+        None,
+        max_length=500,
+        validation_alias=AliasChoices("imagen_url", "imagenUrl"),
+    )
 
 
 class RestauranteResponse(RestauranteBase):
@@ -106,14 +114,31 @@ class ProductoResponse(ProductoBase):
 class ProductoValidacionItem(BaseModel):
     """Item for batch product validation."""
 
-    producto_id: UUID
-    precio_unit: Decimal = Field(..., gt=0, decimal_places=2)
+    producto_id: UUID = Field(
+        ...,
+        validation_alias=AliasChoices("producto_id", "productId"),
+    )
+    precio_unit: Decimal = Field(
+        ...,
+        gt=0,
+        decimal_places=2,
+        validation_alias=AliasChoices("precio_unit", "precioUnit"),
+    )
 
 
 class ProductoValidacionRequest(BaseModel):
     """Request for batch product validation."""
 
     items: list[ProductoValidacionItem]
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_plain_list(cls, data):
+        # Backward compatible: allow legacy body as raw list
+        # [{"productId": "...", "precioUnit": "..."}]
+        if isinstance(data, list):
+            return {"items": data}
+        return data
 
 
 class ProductoValidacionResultItem(BaseModel):

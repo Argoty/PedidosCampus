@@ -1,12 +1,13 @@
-# 📮 Postman Collection — User Service
+# 📮 Postman Collections — PedidosCampus
 
-Colección tested & ready para manual testing del User Service (ASP.NET 8 + PostgreSQL).
+Colecciones para manual testing de microservicios.
 
 ## ✅ Import & Run — 3 Steps
 
 ### 1. Import Collection
 ```
 File → Import → postman/user-service.postman_collection.json
+File → Import → postman/order-service.postman_collection.json
 ```
 ✅ Automáticamente:
 - 15+ endpoints con JWT pre-injection
@@ -35,6 +36,23 @@ Actualiza collection variable: `active_role` = `usuario` | `repartidor` | `admin
 | **3️⃣ Admin Endpoints** | GET/PATCH/POST/DELETE `/profiles*` | ✅ JWT | admin only |
 | **4️⃣ Internal (Gateway)** | `/delivery`, `/search`, `/reserve`, `/release` | ✅ JWT + x-client: gateway | internal |
 | **📚 Reference** | Error codes, response models | – | – |
+
+### Order Service Collection (`postman/order-service.postman_collection.json`)
+
+- Base URL: `http://localhost:8002`
+- Endpoints cubiertos:
+  - `GET /health`
+  - `POST /orders`
+  - `GET /orders`
+  - `GET /orders/{orderId}`
+  - `GET /orders/{orderId}/history`
+  - `POST /orders/{orderId}/accept`
+  - `POST /orders/{orderId}/status` (repartidor y admin)
+  - `POST /orders/{orderId}/cancel`
+  - `GET /orders/active`
+  - `GET /orders/deliverer/{repartidorId}`
+
+> Nota: body correcto para actualizar estado usa `toEstado` (no `estado`).
 
 ## 🔐 JWT Details
 

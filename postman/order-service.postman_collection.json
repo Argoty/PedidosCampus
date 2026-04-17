@@ -184,14 +184,40 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estado\": \"en_camino\"\n}"
+                "raw": "{\n  \"toEstado\": \"en_camino\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/status",
               "host": ["{{BASE_URL}}"],
               "path": ["orders", "{{ORDER_ID}}", "status"]
             },
-            "description": "Valid estados: aceptado, en_camino, entregado"
+            "description": "Valid toEstado values: en_camino, entregado"
+          }
+        },
+        {
+          "name": "6b. Update Order Status (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toEstado\": \"entregado\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/status",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "status"]
+            }
           }
         },
         {
@@ -279,6 +305,11 @@
                 {
                   "key": "restauranteId",
                   "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "disabled": true
+                },
+                {
+                  "key": "repartidorId",
+                  "value": "550e8400-e29b-41d4-a716-446655440003",
                   "disabled": true
                 }
               ]
@@ -369,6 +400,24 @@
               "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/accept",
               "host": ["{{BASE_URL}}"],
               "path": ["orders", "{{ORDER_ID}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Usuario tries to List Other Deliverer Orders (Forbidden)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/deliverer/550e8400-e29b-41d4-a716-446655440003",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "deliverer", "550e8400-e29b-41d4-a716-446655440003"]
             }
           }
         },

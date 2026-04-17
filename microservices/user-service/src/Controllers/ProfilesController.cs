@@ -17,6 +17,7 @@ namespace PedidosCampus.UserService.Controllers;
 [ApiController]
 [Route("api/profiles")]
 [Produces("application/json")]
+[Authorize]
 public class ProfilesController : ControllerBase
 {
     private readonly IProfileService _profileService;
@@ -36,6 +37,7 @@ public class ProfilesController : ControllerBase
     /// Roles: usuario, repartidor
     /// </summary>
     [HttpGet("me")]
+    [Authorize(Roles = "usuario,repartidor")]
     public async Task<ActionResult<UserProfileResponse>> GetMyProfile()
     {
         // TODO: Extraer userId del JWT (User.FindFirst("sub")?.Value)
@@ -60,6 +62,7 @@ public class ProfilesController : ControllerBase
     /// Roles: autenticado
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<UserProfileResponse>> CreateProfile([FromBody] CreateProfileRequest request)
     {
         if (!ModelState.IsValid)
@@ -102,6 +105,7 @@ public class ProfilesController : ControllerBase
     /// Roles: usuario, repartidor
     /// </summary>
     [HttpPatch("me")]
+    [Authorize(Roles = "usuario,repartidor")]
     public async Task<ActionResult<UserProfileResponse>> UpdateMyProfile([FromBody] UpdateProfileRequest request)
     {
         // TODO: Extraer userId del JWT
@@ -126,6 +130,7 @@ public class ProfilesController : ControllerBase
     /// Efecto: Publica evento repartidor.availability.changed
     /// </summary>
     [HttpPost("me/availability")]
+    [Authorize(Roles = "repartidor")]
     public async Task<ActionResult<AvailabilityResponse>> SetAvailability([FromBody] AvailabilityRequest request)
     {
         // TODO: Extraer userId del JWT y validar rol repartidor
@@ -159,6 +164,7 @@ public class ProfilesController : ControllerBase
     /// Roles: repartidor
     /// </summary>
     [HttpGet("me/availability")]
+    [Authorize(Roles = "repartidor")]
     public async Task<ActionResult<AvailabilityResponse>> GetMyAvailability()
     {
         // TODO: Extraer userId del JWT
@@ -183,6 +189,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin
     /// </summary>
     [HttpGet]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<PaginatedResponse<UserProfileResponse>>> ListProfiles(
         [FromQuery] string? tipo = null,
         [FromQuery] bool? isActive = null,
@@ -204,6 +211,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin, owner (si userId coincide)
     /// </summary>
     [HttpGet("{profileId:guid}")]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<UserProfileResponse>> GetProfileById(Guid profileId)
     {
         // TODO: Validar autorización (admin o propietario)
@@ -224,6 +232,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin
     /// </summary>
     [HttpPatch("{profileId:guid}")]
+    [Authorize(Roles = "admin")]
     public async Task<ActionResult<UserProfileResponse>> UpdateProfileById(
         Guid profileId,
         [FromBody] UpdateProfileRequest request)
@@ -245,6 +254,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin
     /// </summary>
     [HttpPost("{profileId:guid}/deactivate")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeactivateProfile(Guid profileId)
     {
         // TODO: Validar rol admin
@@ -266,6 +276,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin
     /// </summary>
     [HttpPost("{profileId:guid}/activate")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> ActivateProfile(Guid profileId)
     {
         // TODO: Validar rol admin
@@ -285,6 +296,7 @@ public class ProfilesController : ControllerBase
     /// Roles: admin
     /// </summary>
     [HttpDelete("{profileId:guid}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> DeleteProfile(Guid profileId)
     {
         // TODO: Validar rol admin
@@ -307,6 +319,7 @@ public class ProfilesController : ControllerBase
     /// Header: X-Client: gateway
     /// </summary>
     [HttpGet("delivery")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<PaginatedResponse<UserProfileResponse>>> ListAvailableDelivery(
         [FromQuery] bool onlyAvailable = true,
         [FromQuery] int offset = 0,
@@ -330,6 +343,7 @@ public class ProfilesController : ControllerBase
     /// Header: X-Client: gateway
     /// </summary>
     [HttpGet("search")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<PaginatedResponse<UserProfileResponse>>> SearchProfiles(
         [FromQuery] string? tipo = null,
         [FromQuery] bool? disponible = null,
@@ -355,6 +369,7 @@ public class ProfilesController : ControllerBase
     /// Respuestas: 200 OK si éxito, 409 Conflict si ya reservado/indisponible
     /// </summary>
     [HttpPost("{profileId:guid}/reserve")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<ReserveResponse>> ReserveProfile(
         Guid profileId,
         [FromBody] ReserveRequest? request = null)
@@ -385,6 +400,7 @@ public class ProfilesController : ControllerBase
     /// Roles: internal (API Gateway)
     /// </summary>
     [HttpPost("{profileId:guid}/release")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<IActionResult> ReleaseReservation(Guid profileId)
     {
         // Validar que sea llamada interna (gateway)

@@ -1,0 +1,12 @@
+name = "pedidoscampus-notificaciones"
+main = "src/index.ts"
+compatibility_date = "2026-04-15"
+# Activa compatibilidad Node.js en caso de necesitar APIs comunes del ecosistema.
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "NOTIFICATIONS"
+# Namespace KV de produccion.
+id = "c39c0014b293439f8523197ae6c0e090"
+# Namespace KV para preview/dev remoto.
+preview_id = "4d15f9ec726f40b090fee38fcf24a220"

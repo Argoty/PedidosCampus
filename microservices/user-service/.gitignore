@@ -5,3 +5,5 @@ obj/
 .vs/
 .vscode/
 *.user
+appsettings.json
+appsettings.Development.json

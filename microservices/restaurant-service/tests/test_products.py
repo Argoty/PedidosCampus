@@ -314,3 +314,21 @@ class TestProductoValidacionBatch:
         assert data["items"][0]["ok"] is True
         assert data["items"][1]["ok"] is False
         assert data["items"][2]["ok"] is False
+
+    async def test_validate_batch_accepts_legacy_array_body(
+        self, client, setup_productos
+    ):
+        """Test backward compatibility with legacy array body and camelCase fields."""
+        response = await client.post(
+            "/api/v1/products/validate-batch",
+            json=[
+                {
+                    "productId": str(setup_productos["p1_id"]),
+                    "precioUnit": "10.00",
+                }
+            ],
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["ok"] is True

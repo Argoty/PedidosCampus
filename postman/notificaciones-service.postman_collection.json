@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "PedidosCampus - Notificaciones Service",
+    "description": "Coleccion minima para probar el microservicio serverless de notificaciones en Cloudflare Workers.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8787"
+    },
+    {
+      "key": "userId",
+      "value": "u-123"
+    },
+    {
+      "key": "notifId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Health",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Crear notificacion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"tipo\": \"PEDIDO_ESTADO_CAMBIADO\",\n  \"mensaje\": \"Tu pedido va en camino\",\n  \"payload\": {\n    \"pedidoId\": \"p-100\",\n    \"estado\": \"en_camino\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/notificaciones",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notificaciones"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('notifId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Listar por usuario",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/notificaciones/{{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notificaciones",
+            "{{userId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Marcar como leida",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/notificaciones/{{notifId}}/leer",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notificaciones",
+            "{{notifId}}",
+            "leer"
+          ]
+        }
+      }
+    }
+  ]
+}

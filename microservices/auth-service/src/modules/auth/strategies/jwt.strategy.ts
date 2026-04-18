@@ -1,7 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtRequestUser, JwtTokenPayload } from '../interfaces/auth.interfaces';
+import {
+  AccessTokenPayload,
+  AuthenticatedUser,
+} from '../interfaces/auth.interfaces';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -14,7 +17,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: JwtTokenPayload): JwtRequestUser {
+  validate(payload: AccessTokenPayload): AuthenticatedUser {
+    // Defensa extra: solo acepta payloads de access token.
     if (payload.type !== 'access') {
       throw new UnauthorizedException('Token de acceso invalido');
     }
@@ -23,7 +27,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       userId: payload.sub,
       email: payload.email,
       role: payload.role,
-      tokenType: payload.type,
     };
   }
 }

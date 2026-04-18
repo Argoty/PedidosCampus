@@ -11,22 +11,23 @@ import {
 import { AuthRole } from '@prisma/client';
 import { Response } from 'express';
 import {
-  REFRESH_COOKIE_NAME,
   REFRESH_COOKIE_MAX_AGE_MS,
+  REFRESH_COOKIE_NAME,
   REFRESH_COOKIE_PATH,
 } from '../../common/constants/auth.constants';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { RefreshCookieGuard } from './guards/refresh-cookie.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { AuthService } from './auth.service';
 import {
   AuthResponse,
-  JwtRequestUser,
+  AuthenticatedUser,
+  RefreshRequestUser,
   SafeAuthUser,
 } from './interfaces/auth.interfaces';
 
@@ -39,10 +40,14 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const authResponse = await this.authService.register(registerDto);
+    // Flujo de registro: crear usuario + abrir sesion inicial (access + refresh cookie).
+    const session = await this.authService.register(registerDto);
 
-    this.setRefreshCookie(response, authResponse.refreshToken);
-    return authResponse;
+    this.setRefreshCookie(response, session.refreshToken);
+    return {
+      user: session.user,
+      accessToken: session.accessToken,
+    };
   }
 
   @Post('login')
@@ -53,36 +58,42 @@ export class AuthController {
     @CurrentUser() user: SafeAuthUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const authResponse = await this.authService.login(user);
+    // LocalAuthGuard ya valido credenciales y cargo request.user.
+    const session = await this.authService.login(user);
 
-    this.setRefreshCookie(response, authResponse.refreshToken);
-    return authResponse;
+    this.setRefreshCookie(response, session.refreshToken);
+    return {
+      user: session.user,
+      accessToken: session.accessToken,
+    };
   }
 
   @Post('refresh')
-  @UseGuards(JwtRefreshGuard)
+  @UseGuards(RefreshCookieGuard)
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @CurrentUser() user: JwtRequestUser,
+    @CurrentUser() user: RefreshRequestUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const authResponse = await this.authService.refreshTokens(
-      user.userId,
-      user.refreshToken ?? '',
-    );
+    // Rotation: invalida refresh anterior y emite uno nuevo.
+    const session = await this.authService.refreshTokens(user);
 
-    this.setRefreshCookie(response, authResponse.refreshToken);
-    return authResponse;
+    this.setRefreshCookie(response, session.refreshToken);
+    return {
+      user: session.user,
+      accessToken: session.accessToken,
+    };
   }
 
   @Post('logout')
-  @UseGuards(JwtRefreshGuard)
+  @UseGuards(RefreshCookieGuard)
   @HttpCode(HttpStatus.OK)
   async logout(
-    @CurrentUser() user: JwtRequestUser,
+    @CurrentUser() user: RefreshRequestUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    await this.authService.logout(user.userId, user.refreshToken ?? '');
+    // Revoca el refresh activo de la cookie actual.
+    await this.authService.logoutByRefreshToken(user.refreshToken);
     this.clearRefreshCookie(response);
 
     return { message: 'Sesion cerrada correctamente' };
@@ -90,7 +101,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: JwtRequestUser): Promise<SafeAuthUser> {
+  async me(@CurrentUser() user: AuthenticatedUser): Promise<SafeAuthUser> {
     return this.authService.getProfile(user.userId);
   }
 
@@ -102,6 +113,7 @@ export class AuthController {
   }
 
   private setRefreshCookie(response: Response, refreshToken: string): void {
+    // Cookie HttpOnly: evita que JS del navegador lea el refresh token.
     response.cookie(REFRESH_COOKIE_NAME, refreshToken, {
       httpOnly: true,
       secure: this.isSecureCookie(),
@@ -112,15 +124,18 @@ export class AuthController {
   }
 
   private clearRefreshCookie(response: Response): void {
-    response.clearCookie(REFRESH_COOKIE_NAME, {
+    // Limpieza explicita para logout seguro en cliente.
+    response.cookie(REFRESH_COOKIE_NAME, '', {
       httpOnly: true,
       secure: this.isSecureCookie(),
       sameSite: 'strict',
+      maxAge: 0,
       path: REFRESH_COOKIE_PATH,
     });
   }
 
   private isSecureCookie(): boolean {
+    // En local HTTP usar false; en produccion HTTPS debe ser true.
     return (process.env.COOKIE_SECURE ?? 'true').toLowerCase() === 'true';
   }
 }

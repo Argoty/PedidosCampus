@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Necesario para leer cookie HttpOnly del refresh token en guards/estrategias.
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,7 +22,10 @@ async function bootstrap() {
 
   app.enableCors({
     origin: corsOrigins,
+    // Permite que el navegador envie cookies entre frontend y auth-service.
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   const port = Number(process.env.PORT ?? 3001);

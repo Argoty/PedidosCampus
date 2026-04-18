@@ -19,6 +19,7 @@ function withCorsHeaders(response: Response): Response {
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
+  // Respuesta JSON estandar para mantener consistencia entre endpoints.
   return new Response(JSON.stringify(body), {
     status,
     headers: JSON_HEADERS,

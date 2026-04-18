@@ -44,6 +44,7 @@ async function parseJsonBody(request: Request): Promise<CreateNotificationBody |
   try {
     return (await request.json()) as CreateNotificationBody;
   } catch {
+    // Respuesta null permite devolver error 400 uniforme desde el handler.
     return null;
   }
 }
@@ -82,6 +83,7 @@ async function handleCreate(request: Request, env: Env): Promise<Response> {
   const mensaje = asNonEmptyString(body.mensaje);
 
   if (!userId || !tipo || !mensaje) {
+    // Validacion minima de contrato para evitar escribir registros incompletos en KV.
     return errorResponse("Campos requeridos: userId, tipo, mensaje.");
   }
 
@@ -121,6 +123,7 @@ async function handleMarkAsRead(env: Env, notificationId: string): Promise<Respo
 
   const updated = await markNotificationAsRead(env, id);
   if (!updated) {
+    // El id no existe o el documento estaba corrupto y no pudo actualizarse.
     return errorResponse("Notificacion no encontrada.", 404);
   }
 

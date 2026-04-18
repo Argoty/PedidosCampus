@@ -7,13 +7,14 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthRole } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { JwtRequestUser } from '../../modules/auth/interfaces/auth.interfaces';
+import { AuthenticatedUser } from '../../modules/auth/interfaces/auth.interfaces';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Lee metadata @Roles del handler/controlador.
     const requiredRoles = this.reflector.getAllAndOverride<AuthRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -24,7 +25,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as JwtRequestUser;
+    const user = request.user as AuthenticatedUser;
 
     if (!user || !requiredRoles.includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para acceder a este recurso');

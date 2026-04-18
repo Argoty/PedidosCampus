@@ -318,12 +318,16 @@ func (h *OrderHandler) AcceptOrder(c *gin.Context) {
 		return
 	}
 
-	// Log token-derived values for debugging
-	if uid, uidErr := middleware.GetUserID(c); uidErr == nil {
-		log.Printf("[AcceptOrder] token userId=%s", uid.String())
-	} else {
-		log.Printf("[AcceptOrder] token userId missing or invalid: %v", uidErr)
+	// Extract userId from token
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		log.Printf("[AcceptOrder] token userId missing or invalid: %v", err)
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
 	}
+
+	// Log token-derived values for debugging
+	log.Printf("[AcceptOrder] token userId=%s", userID.String())
 	if role, roleErr := middleware.GetRole(c); roleErr == nil {
 		log.Printf("[AcceptOrder] token role=%s", role)
 	} else {
@@ -331,6 +335,15 @@ func (h *OrderHandler) AcceptOrder(c *gin.Context) {
 	}
 
 	log.Printf("[AcceptOrder] payload repartidorId=%s", req.RepartidorID.String())
+
+	// SECURITY: Validate that repartidor in token matches repartidor in body
+	if userID != req.RepartidorID {
+		log.Printf("[AcceptOrder] security violation: token userId=%s != body repartidorId=%s", userID.String(), req.RepartidorID.String())
+		c.JSON(http.StatusForbidden, errors.ErrForbidden.WithDetails(map[string]interface{}{
+			"issue": "deliverer can only accept orders for themselves",
+		}))
+		return
+	}
 
 	pedido, err := h.service.AcceptOrder(c.Request.Context(), orderID, req.RepartidorID)
 	if err != nil {

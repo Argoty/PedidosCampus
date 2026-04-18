@@ -1,374 +1,169 @@
 {
   "info": {
     "_postman_id": "restaurant-service-collection",
-    "name": "Restaurant Service - Order, Restaurant, User APIs",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Colección para probar endpoints de order-service, restaurant-service y user-service. JWT pre-generado con expiración a 10 años."
+    "name": "PedidosCampus - Restaurant Service",
+    "description": "PedidosCampus Restaurant Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:8001)\n   - ADMIN_TOKEN: [JWT with role: admin]\n   - PUBLIC_TOKEN: [JWT for public endpoints]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002\n- Public User ID: 550e8400-e29b-41d4-a716-446655440000\n\n**Port in Docker:** 8001\n**Database:** PostgreSQL (restaurant_db)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{jwt_token}}",
-        "type": "string"
-      }
-    ]
-  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:8001",
+      "type": "string"
+    },
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzA3MDAwMDAsImV4cCI6MTc4ODQwMDAwMH0.admin_token_signature",
+      "type": "string"
+    },
+    {
+      "key": "PUBLIC_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJyb2xlIjoidXN1YXJpbyIsImlhdCI6MTczMDcwMDAwMCwiZXhwIjoxNzg4NDAwMDAwfQ.public_token_signature",
+      "type": "string"
+    },
+    {
+      "key": "restaurante_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "producto_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
   "item": [
     {
-      "name": "Order Service",
+      "name": "Health",
       "item": [
         {
-          "name": "Create Order",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{JWT_SUB}}\",\n  \"restauranteId\": \"11111111-1111-1111-1111-111111111111\",\n  \"direccionEntrega\": \"Calle Falsa 123\",\n  \"items\": [\n    {\n      \"productId\": \"22222222-2222-2222-2222-222222222222\",\n      \"nombre\": \"Empanada\",\n      \"precioUnit\": 2.5,\n      \"cantidad\": 3\n    }\n  ]\n}"
-            },
-            "url": {
-              "raw": "http://localhost:3000/orders",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Order",
+          "name": "Health Check",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/orders/{{orderId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders",
-                "{{orderId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Orders (user)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3000/orders?userId={{JWT_SUB}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders"
-              ],
-              "query": [
-                {
-                  "key": "userId",
-                  "value": "{{JWT_SUB}}"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Accept Order (repartidor)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"repartidorId\": \"{{JWT_SUB}}\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:3000/orders/{{orderId}}/accept",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders",
-                "{{orderId}}",
-                "accept"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Order Status",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"toEstado\": \"en_camino\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:3000/orders/{{orderId}}/status",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders",
-                "{{orderId}}",
-                "status"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Cancel Order",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "http://localhost:3000/orders/{{orderId}}/cancel",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders",
-                "{{orderId}}",
-                "cancel"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Active Orders (admin)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3000/orders/active?limit=10&offset=0",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "orders",
-                "active"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
+              "raw": "{{BASE_URL}}/docs",
+              "host": ["{{BASE_URL}}"],
+              "path": ["docs"]
             }
           }
         }
       ]
     },
     {
-      "name": "Restaurant Service",
+      "name": "Restaurantes - Public Operations",
       "item": [
         {
-          "name": "Create Restaurant",
+          "name": "1. List Restaurants (Public, with filters)",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"La Parrilla\",\n  \"descripcion\": \"Comida universitaria\",\n  \"direccion\": \"Av. Universidad 100\",\n  \"categoria\": \"Comida Rapida\",\n  \"imagenUrl\": \"https://example.com/img.jpg\"\n}"
-            },
             "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Restaurants",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants?is_active=true&categoria=Comida",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants"
-              ],
+              "raw": "{{BASE_URL}}/api/v1/restaurants?categoria=&is_active=true&q=&limit=50&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"],
               "query": [
+                {
+                  "key": "categoria",
+                  "value": "",
+                  "disabled": true
+                },
                 {
                   "key": "is_active",
                   "value": "true"
                 },
                 {
-                  "key": "categoria",
-                  "value": "Comida"
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
                 }
               ]
             }
           }
         },
         {
-          "name": "Get Restaurant",
+          "name": "2. Get Restaurant Detail (Public, with menu)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}"
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}?include_unavailable=false",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}"],
+              "query": [
+                {
+                  "key": "include_unavailable",
+                  "value": "false"
+                }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurantes - Admin Operations",
+      "item": [
+        {
+          "name": "1. Create Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"La Pizzería del Barrio\",\n  \"descripcion\": \"Auténtica pizzería italiana con ingredientes frescos\",\n  \"categoria\": \"pizza\",\n  \"telefono\": \"+34912345678\",\n  \"email\": \"info@lapizzeria.es\",\n  \"direccion\": \"Calle Principal 42, Madrid\",\n  \"horario_apertura\": \"11:00\",\n  \"horario_cierre\": \"23:00\",\n  \"imagen_url\": \"https://example.com/pizzeria.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
             }
           }
         },
         {
-          "name": "Update Restaurant",
+          "name": "2. Update Restaurant (Admin only)",
           "request": {
             "method": "PATCH",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"La Parrilla Updated\",\n  \"descripcion\": \"Mejor comida\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Activate Restaurant",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}/activate",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}",
-                "activate"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Deactivate Restaurant",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}/deactivate",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}",
-                "deactivate"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Product",
-          "request": {
-            "method": "POST",
-            "header": [
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -376,184 +171,122 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Empanada\",\n  \"descripcion\": \"Rellena de queso\",\n  \"precio\": 2.5,\n  \"disponible\": true\n}"
+              "raw": "{\n  \"nombre\": \"La Pizzería del Barrio - Actualizado\",\n  \"descripcion\": \"Auténtica pizzería italiana con ingredientes frescos y horno de leña\",\n  \"horario_apertura\": \"10:00\",\n  \"horario_cierre\": \"00:00\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}/products",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}",
-                "products"
-              ]
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}"]
             }
           }
         },
         {
-          "name": "List Products",
+          "name": "3. Activate Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/activate",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "4. Deactivate Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/deactivate",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "deactivate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Public Operations",
+      "item": [
+        {
+          "name": "1. List Products by Restaurant (Public)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:8001/api/v1/restaurants/{{restaurantId}}/products?disponible=true",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "restaurants",
-                "{{restaurantId}}",
-                "products"
-              ],
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products?disponible=true&limit=100&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "products"],
               "query": [
                 {
                   "key": "disponible",
-                  "value": "true"
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
                 }
               ]
             }
           }
         },
         {
-          "name": "Get Product",
+          "name": "2. Get Product Detail (Public)",
           "request": {
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8001/api/v1/products/{{productId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "products",
-                "{{productId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Product",
-          "request": {
-            "method": "PATCH",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"precio\": 3.0,\n  \"disponible\": true\n}"
-            },
             "url": {
-              "raw": "http://localhost:8001/api/v1/products/{{productId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "products",
-                "{{productId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete Product",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8001/api/v1/products/{{productId}}",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "products",
-                "{{productId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Validate Products Batch",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"items\": [\n    { \"producto_id\": \"{{productId}}\", \"precio_unit\": \"2.50\" }\n  ]\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8001/api/v1/products/validate-batch",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8001",
-              "path": [
-                "api",
-                "v1",
-                "products",
-                "validate-batch"
-              ]
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
             }
           }
         }
       ]
     },
     {
-      "name": "User Service",
+      "name": "Productos - Admin Operations",
       "item": [
         {
-          "name": "Get My Profile",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3002/profiles/me",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "me"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Profile",
+          "name": "1. Create Product (Admin only)",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -561,54 +294,25 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tipo\": \"usuario\",\n  \"nombre\": \"Juan Perez\",\n  \"telefono\": \"56912345678\",\n  \"direccion\": \"Calle 123\"\n}"
+              "raw": "{\n  \"nombre\": \"Pizza Margherita\",\n  \"descripcion\": \"Clásica pizza italiana con tomate, mozzarella y albahaca\",\n  \"precio\": 12.99,\n  \"categoria\": \"pizza\",\n  \"imagen_url\": \"https://example.com/margherita.jpg\",\n  \"disponible\": true\n}"
             },
             "url": {
-              "raw": "http://localhost:3002/profiles",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles"
-              ]
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "products"]
             }
           }
         },
         {
-          "name": "Update My Profile",
+          "name": "2. Update Product (Admin only)",
           "request": {
             "method": "PATCH",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Juan Perez Updated\",\n  \"telefono\": \"56912345999\",\n  \"direccion\": \"Calle 456\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:3002/profiles/me",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "me"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Change Availability (repartidor)",
-          "request": {
-            "method": "POST",
-            "header": [
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -616,175 +320,161 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"disponible\": true\n}"
+              "raw": "{\n  \"nombre\": \"Pizza Margherita Premium\",\n  \"precio\": 14.99,\n  \"disponible\": true\n}"
             },
             "url": {
-              "raw": "http://localhost:3002/profiles/me/availability",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "me",
-                "availability"
-              ]
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
             }
           }
         },
         {
-          "name": "List Delivery Profiles",
+          "name": "3. Delete Product (Admin only - soft delete)",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:3002/profiles/delivery?onlyAvailable=true&limit=10&offset=0",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "delivery"
-              ],
-              "query": [
-                {
-                  "key": "onlyAvailable",
-                  "value": "true"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "List All Profiles (admin)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3002/profiles?tipo=usuario&isActive=true&limit=10&offset=0",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles"
-              ],
-              "query": [
-                {
-                  "key": "tipo",
-                  "value": "usuario"
-                },
-                {
-                  "key": "isActive",
-                  "value": "true"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Deactivate Profile (admin)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3002/profiles/{{profileId}}/deactivate",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "{{profileId}}",
-                "deactivate"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Activate Profile (admin)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3002/profiles/{{profileId}}/activate",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3002",
-              "path": [
-                "profiles",
-                "{{profileId}}",
-                "activate"
-              ]
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
             }
           }
         }
       ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "SECRET_KEY",
-      "value": "your-secret-key-change-in-production-12345678901234567890",
-      "type": "string"
     },
     {
-      "key": "JWT_SUB",
-      "value": "11111111-1111-1111-1111-111111111111",
-      "type": "string"
+      "name": "Productos - Batch Operations (Internal)",
+      "item": [
+        {
+          "name": "1. Validate Products Batch (Order Service Integration)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"producto_id\": \"{{producto_id}}\",\n      \"cantidad\": 2,\n      \"precio_unitario\": 12.99\n    },\n    {\n      \"producto_id\": \"<otro_producto_id>\",\n      \"cantidad\": 1,\n      \"precio_unitario\": 8.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/validate-batch",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "validate-batch"]
+            }
+          }
+        }
+      ]
     },
     {
-      "key": "JWT_ROLE",
-      "value": "usuario",
-      "type": "string"
+      "name": "Error Cases - Testing",
+      "item": [
+        {
+          "name": "❌ Unauthorized - No Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
+            }
+          }
+        },
+        {
+          "name": "❌ Forbidden - Public user trying to create (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Unauthorized Restaurant\",\n  \"descripcion\": \"This should fail\",\n  \"categoria\": \"pizza\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
+            }
+          }
+        },
+        {
+          "name": "❌ Not Found - Invalid Restaurant ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        },
+        {
+          "name": "❌ Not Found - Invalid Product ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        }
+      ]
     },
     {
-      "key": "jwt_token",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJyb2xlIjoidXN1YXJpbyIsImlhdCI6MTc3NjExNjk5NCwiZXhwIjoyMDkxNDc2OTk0fQ.tS1Go321M6b8vemvlbP-ShmhHC6knKiXSdf9WvfTFDY",
-      "type": "string"
-    },
-    {
-      "key": "orderId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "restaurantId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "productId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "profileId",
-      "value": "",
-      "type": "string"
+      "name": "📚 Reference",
+      "item": [
+        {
+          "name": "Response Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/openapi.json",
+              "host": ["{{BASE_URL}}"],
+              "path": ["openapi.json"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

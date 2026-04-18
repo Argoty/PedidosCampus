@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/PedidosCampus/order-service/pkg/errors"
@@ -63,6 +64,10 @@ func JWTMiddleware(secret string) gin.HandlerFunc {
 		c.Set(SubKey, claims.Sub)
 		c.Set(RoleKey, claims.Role)
 		c.Set(UserIDKey, claims.Sub)
+
+		// Debug logs for claims
+		// NOTE: remove or lower verbosity in production
+		log.Printf("[JWTMiddleware] claims sub=%s role=%s email=%s", claims.Sub, claims.Role, claims.Email)
 
 		c.Next()
 	}

@@ -97,7 +97,6 @@ services:
       DATABASE_URL: postgresql+psycopg://restaurant_user:${RESTAURANT_DB_PASSWORD:-restaurant_password}@restaurant-db:5432/restaurant_db
       SECRET_KEY: ${ACCESS_TOKEN_SECRET}
       ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 15
       DEBUG: "false"
     depends_on:
       restaurant-db:
@@ -134,7 +133,6 @@ services:
       DATABASE_URL: postgres://order_user:${ORDER_DB_PASSWORD:-order_password}@order-db:5432/order_db?sslmode=disable
       DATABASE_LOG_LEVEL: info
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
-      JWT_EXPIRATION_HOURS: 24
       RABBITMQ_URL: ""
       RABBITMQ_EXCHANGE: orders
       RABBITMQ_QUEUE_PREFIX: order-service

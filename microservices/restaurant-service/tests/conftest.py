@@ -1,12 +1,13 @@
 import pytest
 import asyncio
+from datetime import datetime, timedelta, timezone
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from jose import jwt
 
 from app.main import app
 from app.core.database import get_db, Base
-from app.core.security import create_access_token
 from app.core.config import get_settings
 
 # Test database setup
@@ -62,10 +63,20 @@ async def client(db_session):
 @pytest.fixture
 def admin_token():
     """Create admin JWT token for tests."""
-    return create_access_token(data={"sub": "admin-user-123", "role": "admin"})
+    payload = {
+        "sub": "admin-user-123",
+        "role": "admin",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 @pytest.fixture
 def user_token():
     """Create regular user JWT token for tests."""
-    return create_access_token(data={"sub": "user-123", "role": "usuario"})
+    payload = {
+        "sub": "user-123",
+        "role": "usuario",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

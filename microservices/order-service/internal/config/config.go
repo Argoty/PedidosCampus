@@ -38,8 +38,7 @@ type DatabaseConfig struct {
 
 // JWTConfig holds JWT configuration
 type JWTConfig struct {
-	Secret          string
-	ExpirationHours time.Duration
+	Secret string
 }
 
 // RabbitMQConfig holds RabbitMQ configuration
@@ -70,8 +69,7 @@ func LoadConfig() (*Config, error) {
 			LogLevel: parseLogLevel(getEnv("DATABASE_LOG_LEVEL", "info")),
 		},
 		JWT: JWTConfig{
-			Secret:          getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-			ExpirationHours: time.Duration(getEnvInt("JWT_EXPIRATION_HOURS", 24)) * time.Hour,
+			Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 		},
 		RabbitMQ: RabbitMQConfig{
 			URL:         getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),

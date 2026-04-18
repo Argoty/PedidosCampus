@@ -4,105 +4,96 @@ Colecciones para manual testing de microservicios.
 
 ## ✅ Import & Run — 3 Steps
 
-### 1. Import Collection
+### 1. Import Collections
 ```
 File → Import → postman/user-service.postman_collection.json
 File → Import → postman/order-service.postman_collection.json
+File → Import → postman/restaurant-service.postman_collection.json
 ```
-✅ Automáticamente:
-- 15+ endpoints con JWT pre-injection
-- Variables (base_url, tokens, UUIDs)
-- Pre-request scripts para Authorization headers
+✅ Automáticamente para cada colección:
+- 12+ endpoints con JWT pre-injection por rol
+- Variables (BASE_URL, ADMIN_TOKEN, PUBLIC_TOKEN, etc.)
+- Headers Authorization configurados por endpoint
 
-### 2. Load JWT Tokens Once
-1. Abre: **"1️⃣ Setup & Variables"** folder
-2. Run: **"Base URL Configuration"** request (verifica conexión)
-3. Run: **"Load JWT Tokens (Generated, 180d)"** request
-   - Carga 3 tokens firmados (usuario/repartidor/admin)
-   - Auto-asigna `jwt_token` según `active_role` variable
-
-### 3. Set Role & Test
-Actualiza collection variable: `active_role` = `usuario` | `repartidor` | `admin`
-- ✅ Todos los endpoints auto-inyectan JWT
-- ✅ Pre-request scripts agregan headers automáticamente
+### 2. Set Variables & Test
+Cada colección tiene variables de colección preconfiguradas:
+- **BASE_URL**: Puerto del servicio (ej: http://localhost:8001 para restaurant)
+- **ADMIN_TOKEN**: JWT con rol admin
+- **PUBLIC_TOKEN**: JWT con rol usuario/public
 
 **Listo. Abre cualquier request y Send.**
 
 ## 📂 Endpoint Overview
 
-| Folder | Endpoints | Auth | Role |
-|--------|-----------|------|------|
-| **2️⃣ User Endpoints** | GET/POST/PATCH `/me*` | ✅ JWT | any user |
-| **3️⃣ Admin Endpoints** | GET/PATCH/POST/DELETE `/profiles*` | ✅ JWT | admin only |
-| **4️⃣ Internal (Gateway)** | `/delivery`, `/search`, `/reserve`, `/release` | ✅ JWT + x-client: gateway | internal |
-| **📚 Reference** | Error codes, response models | – | – |
+| Service | Collection | Endpoints | Base URL | Auth |
+|---------|-----------|-----------|----------|------|
+| **User Service** | `user-service.postman_collection.json` | GET/POST/PATCH/DELETE `/api/profiles*` | `http://localhost:5000` | ✅ JWT (usuario/repartidor/admin) |
+| **Order Service** | `order-service.postman_collection.json` | GET/POST `/orders*` | `http://localhost:8002` | ✅ JWT (usuario/admin) |
+| **Restaurant Service** | `restaurant-service.postman_collection.json` | GET/POST/PATCH/DELETE `/api/v1/restaurants*` | `http://localhost:8001` | ✅ JWT (public/admin) |
 
-### Order Service Collection (`postman/order-service.postman_collection.json`)
+### Restaurant Service Collection (`postman/restaurant-service.postman_collection.json`)
 
-- Base URL: `http://localhost:8002`
-- Endpoints cubiertos:
-  - `GET /health`
-  - `POST /orders`
-  - `GET /orders`
-  - `GET /orders/{orderId}`
-  - `GET /orders/{orderId}/history`
-  - `POST /orders/{orderId}/accept`
-  - `POST /orders/{orderId}/status` (repartidor y admin)
-  - `POST /orders/{orderId}/cancel`
-  - `GET /orders/active`
-  - `GET /orders/deliverer/{repartidorId}`
+**Folders:**
+- **Restaurantes - Public Operations** (GET list, GET detail) — Anyone with JWT
+- **Restaurantes - Admin Operations** (POST create, PATCH update, POST activate/deactivate) — Admin only
+- **Productos - Public Operations** (GET list, GET detail) — Anyone with JWT
+- **Productos - Admin Operations** (POST create, PATCH update, DELETE soft-delete) — Admin only
+- **Productos - Batch Operations** (POST validate-batch) — Order Service integration
+- **Error Cases - Testing** (401/403/404 scenarios)
 
-> Nota: body correcto para actualizar estado usa `toEstado` (no `estado`).
+**Variables:**
+- `BASE_URL`: `http://localhost:8001`
+- `ADMIN_TOKEN`: JWT with admin role
+- `PUBLIC_TOKEN`: JWT with public/usuario role
+- `restaurante_id`: Placeholder for testing (set after creating a restaurant)
+- `producto_id`: Placeholder for testing (set after creating a product)
 
 ## 🔐 JWT Details
 
 3 pre-signed HS256 tokens inclusos, vigentes ~180 días:
 
-| Token | Role | UUID |
-|-------|------|------|
-| **usuario** | usuario | 550e8400-e29b-41d4-a716-446655440000 |
-| **repartidor** | repartidor | 550e8400-e29b-41d4-a716-446655440001 |
-| **admin** | admin | 550e8400-e29b-41d4-a716-446655440002 |
+| Token | Role | UUID | Use Case |
+|-------|------|------|----------|
+| **ADMIN_TOKEN** | admin | 550e8400-e29b-41d4-a716-446655440002 | Create/update/delete restaurants & products |
+| **PUBLIC_TOKEN** | usuario | 550e8400-e29b-41d4-a716-446655440000 | List/view restaurants & products |
+| **REPARTIDOR_TOKEN** | repartidor | 550e8400-e29b-41d4-a716-446655440001 | (User Service) Set availability, reserve |
 
-**Secret (dev):** `ACCESS_TOKEN_SECRET=dev_access_token_secret_123_very_secret`
+**Secret (dev):** `ACCESS_TOKEN_SECRET=dev_access_token_secret_123_very_secret` (auth-service)
 
 ⚠️ Si cambiás el secreto en runtime, estos tokens dejan de funcionar. Regeneralos.
 
 ## 🎯 Test Workflows
 
-### ✅ Workflow 1: Create User & Get Profile
+### ✅ Workflow 1: Create Restaurant & Add Products (Admin)
 ```
-1. Set active_role = "usuario"
-2. Run setup requests
-3. POST /profiles (create)
-4. GET /me (retrieve own)
-5. PATCH /me (update)
-```
-
-### ✅ Workflow 2: Delivery Person Availability
-```
-1. Set active_role = "repartidor"
-2. POST /profiles (tipo: "repartidor")
-3. POST /me/availability (set disponible: true)
-4. Set active_role = "admin" (to check)
-5. GET /profiles/delivery (internal)
+1. Set BASE_URL = http://localhost:8001
+2. POST /restaurants (create with ADMIN_TOKEN)
+   → Copy restaurante_id from response
+3. POST /restaurants/{id}/products (create product with ADMIN_TOKEN)
+   → Copy producto_id from response
+4. GET /restaurants/{id} (view with PUBLIC_TOKEN)
+   → See restaurant with menu
 ```
 
-### ✅ Workflow 3: Admin Management
+### ✅ Workflow 2: Browse Restaurants (Public)
 ```
-1. Set active_role = "admin"
-2. GET /profiles (list all)
-3. GET /profiles/{id} (detail)
-4. PATCH /profiles/{id} (update)
-5. DELETE /profiles/{id} (remove)
+1. GET /restaurants (list all active with PUBLIC_TOKEN)
+2. GET /restaurants/{id} (detail with PUBLIC_TOKEN)
+3. GET /restaurants/{id}/products (menu with PUBLIC_TOKEN)
 ```
 
-### ✅ Workflow 4: Atomic Reserve (Race-Condition Safe)
+### ✅ Workflow 3: Batch Validation (Order Integration)
 ```
-1. POST /profiles/{id}/reserve (ttl: 300s)
-   → 200 OK: reserved until timestamp
-   → 409 Conflict: already reserved
-2. POST /profiles/{id}/release (clear reservation)
+1. Create multiple products in a restaurant
+2. POST /products/validate-batch (with PUBLIC_TOKEN)
+   → Validate items are available & pricing correct
+```
+
+### ✅ Workflow 4: Activate/Deactivate (Admin)
+```
+1. POST /restaurants/{id}/activate (ADMIN_TOKEN)
+2. POST /restaurants/{id}/deactivate (ADMIN_TOKEN)
+3. Verify in GET /restaurants (is_active changes)
 ```
 
 ## 🐛 Troubleshooting
@@ -120,12 +111,21 @@ Actualiza collection variable: `active_role` = `usuario` | `repartidor` | `admin
 curl http://localhost:5000/swagger/v1/swagger.json
 ```
 
-## ✅ Status — TESTED & READY
+## ✅ Status — READY
 
-- ✅ Colección JSON: syntaxes correctas (URLs hardcodeadas con protocol/host/port)
-- ✅ Pre-request scripts: inyectan JWT + headers automáticamente en CADA request
-- ✅ Tokens: 3 HS256 vigentes ~180 días, validados contra runtime
-- ✅ Endpoints: 15+ testeados end-to-end (200/201/204/401/403/409 según esperado)
-- ✅ Docker integration: corre en puerto 5000, Compose `.env.docker` con `ACCESS_TOKEN_SECRET`
+- ✅ **User Service**: 15+ endpoints, JWT (usuario/repartidor/admin), soft delete + deactivate
+- ✅ **Order Service**: 10+ endpoints, JWT (usuario/admin)
+- ✅ **Restaurant Service**: 12 endpoints, JWT (public/admin), soft delete only
+- ✅ All collections: Pre-configured variables, correct tokens, role-based headers
+- ✅ Docker integration: Each service on different port (`5000`, `8001`, `8002`, etc.)
 
-**Resultado en curl:** Todos los endpoints responden correctamente con JWT válido.
+**Verification:**
+```bash
+# Terminal 1: Start compose
+docker compose --env-file .env.docker up --build
+
+# Terminal 2: Verify services
+curl -s http://localhost:5000/swagger/v1/swagger.json | jq .info.title
+curl -s http://localhost:8001/docs | grep -q "FastAPI" && echo "Restaurant running"
+curl -s http://localhost:8002/api/health | jq .status
+```

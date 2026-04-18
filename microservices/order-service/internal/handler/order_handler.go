@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/PedidosCampus/order-service/internal/dto"
@@ -305,9 +306,11 @@ func (h *OrderHandler) AcceptOrder(c *gin.Context) {
 		}))
 		return
 	}
+	log.Printf("[AcceptOrder] start orderId=%s", orderID.String())
 
 	var req dto.AcceptOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[AcceptOrder] bind error: %v", err)
 		errResp := errors.ErrValidation.WithDetails(map[string]interface{}{
 			"error": err.Error(),
 		})
@@ -315,18 +318,49 @@ func (h *OrderHandler) AcceptOrder(c *gin.Context) {
 		return
 	}
 
+	// Extract userId from token
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		log.Printf("[AcceptOrder] token userId missing or invalid: %v", err)
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	// Log token-derived values for debugging
+	log.Printf("[AcceptOrder] token userId=%s", userID.String())
+	if role, roleErr := middleware.GetRole(c); roleErr == nil {
+		log.Printf("[AcceptOrder] token role=%s", role)
+	} else {
+		log.Printf("[AcceptOrder] token role missing or invalid: %v", roleErr)
+	}
+
+	log.Printf("[AcceptOrder] payload repartidorId=%s", req.RepartidorID.String())
+
+	// SECURITY: Validate that repartidor in token matches repartidor in body
+	if userID != req.RepartidorID {
+		log.Printf("[AcceptOrder] security violation: token userId=%s != body repartidorId=%s", userID.String(), req.RepartidorID.String())
+		c.JSON(http.StatusForbidden, errors.ErrForbidden.WithDetails(map[string]interface{}{
+			"issue": "deliverer can only accept orders for themselves",
+		}))
+		return
+	}
+
 	pedido, err := h.service.AcceptOrder(c.Request.Context(), orderID, req.RepartidorID)
 	if err != nil {
+		log.Printf("[AcceptOrder] service error: %v", err)
 		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
+			log.Printf("[AcceptOrder] app error code=%s status=%d message=%s", appErr.Code, appErr.HTTPStatus, appErr.Message)
 			c.JSON(appErr.HTTPStatus, appErr)
 			return
 		}
 		appErr := errors.ErrInternal
 		appErr.Message = err.Error()
+		log.Printf("[AcceptOrder] internal error: %s", appErr.Message)
 		c.JSON(appErr.HTTPStatus, appErr)
 		return
 	}
 
+	log.Printf("[AcceptOrder] success orderId=%s estado=%s repartidor=%v", pedido.ID.String(), pedido.Estado, pedido.RepartidorID)
 	c.JSON(http.StatusOK, mapPedidoToResponse(pedido))
 }
 

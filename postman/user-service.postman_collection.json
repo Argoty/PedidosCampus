@@ -2,617 +2,600 @@
   "info": {
     "_postman_id": "user-service-collection",
     "name": "PedidosCampus - User Service",
-    "description": "Manual testing collection for User Service (ASP.NET 8 + PostgreSQL).\n\nAuthentication validates JWT signature and role claim.\n\n**SETUP (do once):**\n1. Import collection\n2. Run: 1️⃣ Setup & Variables → Base URL Configuration\n3. Run: 1️⃣ Setup & Variables → Load JWT Tokens (Generated, 180d)\n4. Set collection variable `active_role` to: usuario, repartidor, or admin\n5. Run any endpoint — JWT will auto-inject via pre-request script\n\n**ENDPOINTS:**\n- User: GET/POST/PATCH /api/profiles/me* (requires JWT)\n- Admin: GET/PATCH/POST/DELETE /api/profiles* (requires admin role)\n- Internal: /delivery, /search, /reserve, /release + X-Client: gateway header",
+    "description": "PedidosCampus User Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:5000)\n   - USUARIO_TOKEN: [JWT with role: usuario]\n   - REPARTIDOR_TOKEN: [JWT with role: repartidor]\n   - ADMIN_TOKEN: [JWT with role: admin]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Usuario ID: 550e8400-e29b-41d4-a716-446655440000\n- Repartidor ID: 550e8400-e29b-41d4-a716-446655440001\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "1️⃣ Setup & Variables",
-      "description": "Configure collection variables and JWT tokens",
+      "name": "Health",
       "item": [
         {
-          "name": "Base URL Configuration",
-          "description": "Initialize variables. Default: http://localhost:5000",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set('base_url', 'http://localhost:5000');",
-                  "pm.environment.set('test_user_id', '550e8400-e29b-41d4-a716-446655440000');",
-                  "pm.environment.set('test_delivery_user_id', '550e8400-e29b-41d4-a716-446655440001');",
-                  "pm.environment.set('test_admin_user_id', '550e8400-e29b-41d4-a716-446655440002');",
-                  "console.log('✅ Variables initialized');"
-                ]
-              }
-            }
-          ],
+          "name": "Health Check",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/swagger/v1/swagger.json",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/swagger/v1/swagger.json",
+              "host": ["{{BASE_URL}}"],
               "path": ["swagger", "v1", "swagger.json"]
-            },
-            "description": "Verify service is running (200 OK = ready)"
-          },
-          "response": []
-        },
-        {
-          "name": "Load JWT Tokens (Generated, 180d)",
-          "description": "Load pre-generated HS256 tokens. Variables set:\n- jwt_usuario_token\n- jwt_repartidor_token\n- jwt_admin_token\n- jwt_token (based on active_role)\n\nSet `active_role` to: usuario, repartidor, or admin before running.",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set('jwt_usuario_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzdWFyaW9AcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJ1c3VhcmlvIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC11c3VhcmlvLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.Tg22bVAG9RRBo5DI5CYzSS3_H2b85pIY61nzluvB7O8');",
-                  "pm.environment.set('jwt_repartidor_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJlbWFpbCI6InJlcGFydGlkb3JAcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJyZXBhcnRpZG9yIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC1yZXBhcnRpZG9yLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.cgOgs5skbTdunwvIwmf062UrzSAf6kr0C3QCOGzIkhw');",
-                  "pm.environment.set('jwt_admin_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJlbWFpbCI6ImFkbWluQHBlZGlkb3NjYW1wdXMubG9jYWwiLCJyb2xlIjoiYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoibWFudWFsLWFkbWluLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.0iC3Lpk_pTWsoRPSyrdXNliw8eBQwh8JME3MMhUA5S4');",
-                  "",
-                  "const role = (pm.environment.get('active_role') || 'usuario').toLowerCase();",
-                  "let token;",
-                  "if (role === 'admin') {",
-                  "  token = pm.environment.get('jwt_admin_token');",
-                  "} else if (role === 'repartidor') {",
-                  "  token = pm.environment.get('jwt_repartidor_token');",
-                  "} else {",
-                  "  token = pm.environment.get('jwt_usuario_token');",
-                  "}",
-                  "pm.environment.set('jwt_token', token);",
-                  "",
-                  "console.log('✅ JWT tokens loaded');",
-                  "console.log('  active_role: ' + role);",
-                  "console.log('  jwt_token: ' + (token ? 'SET' : 'FAILED'));"
-                ]
-              }
             }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:5000/",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
-              "path": [""]
-            }
-          },
-          "response": []
+          }
         }
       ]
     },
     {
-      "name": "2️⃣ User Endpoints (Public)",
-      "description": "Endpoints accessible by authenticated users to manage their own profile",
+      "name": "Profiles - User Operations",
       "item": [
         {
-          "name": "GET /me - Get My Profile",
-          "description": "Retrieve the authenticated user's profile.\n\n**Auth**: Required (JWT)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "1. Get My Profile (Usuario/Repartidor/Admin)",
           "request": {
             "method": "GET",
-            "header": [{"key": "Accept", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/me",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "me"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /profiles - Create Profile",
-          "description": "Create a new profile for the authenticated user.\n\n**Auth**: Required\n**Status**: 201 Created",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "2. Create Profile (Usuario/Repartidor/Admin)",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\"tipo\": \"usuario\", \"nombre\": \"Juan Pérez García\", \"telefono\": \"+34912345678\", \"direccion\": \"Calle Principal 123, 28001 Madrid\"}"
+              "raw": "{\n  \"tipo\": \"usuario\",\n  \"nombre\": \"Juan Pérez García\",\n  \"telefono\": \"+34912345678\",\n  \"direccion\": \"Calle Principal 123, 28001 Madrid\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/profiles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "PATCH /me - Update My Profile",
-          "description": "Update own profile (partial fields).\n\n**Auth**: Required\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "3. Update My Profile (Usuario/Repartidor)",
           "request": {
             "method": "PATCH",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\": \"Juan Pérez García (Updated)\", \"telefono\": \"+34912345999\"}"
+              "raw": "{\n  \"nombre\": \"Juan Pérez García (Updated)\",\n  \"telefono\": \"+34912345999\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/profiles/me",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "me"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "GET /me/availability - Get My Availability",
-          "description": "Get delivery person's availability status.\n\n**Auth**: Required\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "4. Get My Availability (Repartidor)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/me/availability",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/me/availability",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "me", "availability"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /me/availability - Set Availability",
-          "description": "Set availability status (for delivery persons).\n\n**Auth**: Required\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "5. Set My Availability (Repartidor)",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\"disponible\": true}"
+              "raw": "{\n  \"disponible\": true\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/profiles/me/availability",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/me/availability",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "me", "availability"]
             }
-          },
-          "response": []
+          }
         }
       ]
     },
     {
-      "name": "3️⃣ Admin Endpoints",
-      "description": "Endpoints for admin to manage all profiles. Require 'admin' role.",
+      "name": "Profiles - Admin Operations",
       "item": [
         {
-          "name": "GET /profiles - List All Profiles",
-          "description": "List all profiles with optional filtering.\n\n**Auth**: Required (admin role)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added (admin role required)');"
-                ]
-              }
-            }
-          ],
+          "name": "6. List All Profiles (Admin)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles?tipo=usuario&isActive=true&limit=10&offset=0",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles?tipo=usuario&isActive=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles"],
               "query": [
-                {"key": "tipo", "value": "usuario"},
-                {"key": "isActive", "value": "true"},
-                {"key": "limit", "value": "10"},
-                {"key": "offset", "value": "0"}
+                {
+                  "key": "tipo",
+                  "value": "usuario",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "GET /profiles/{profileId} - Get Profile by ID",
-          "description": "Get a specific profile by ID.\n\n**Auth**: Required (admin)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "7. Get Profile by ID (Admin)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440000",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "PATCH /profiles/{profileId} - Update Profile (Admin)",
-          "description": "Update a profile as admin.\n\n**Auth**: Required (admin role)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "8. Update Profile by ID (Admin)",
           "request": {
             "method": "PATCH",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\": \"Updated by Admin\", \"isActive\": true}"
+              "raw": "{\n  \"nombre\": \"Updated by Admin\",\n  \"isActive\": true\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440000",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /profiles/{profileId}/activate - Activate Profile",
-          "description": "Activate a deactivated profile.\n\n**Auth**: Required (admin role)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "9. Activate Profile (Admin)",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440000/activate",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000/activate",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000", "activate"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /profiles/{profileId}/deactivate - Deactivate Profile",
-          "description": "Deactivate a profile (soft delete).\n\n**Auth**: Required (admin role)\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "10. Deactivate Profile (Admin)",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440000/deactivate",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000/deactivate",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000", "deactivate"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "DELETE /profiles/{profileId} - Delete Profile",
-          "description": "Delete a profile.\n\n**Auth**: Required (admin role)\n**Status**: 204 No Content",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "console.log('🔐 JWT added');"
-                ]
-              }
-            }
-          ],
+          "name": "11. Delete Profile (Admin)",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440000",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
             }
-          },
-          "response": []
+          }
         }
       ]
     },
     {
-      "name": "4️⃣ Internal Endpoints (via Gateway)",
-      "description": "⚠️ These endpoints should ONLY be called by the API Gateway.\n\nIn development, tests with X-Client: gateway header.",
+      "name": "Profiles - Internal (Gateway)",
       "item": [
         {
-          "name": "GET /profiles/delivery - List Available Delivery Persons",
-          "description": "Get list of available delivery persons.\n\n**Auth**: Required + X-Client: gateway header\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "pm.request.headers.add({key: 'x-client', value: 'gateway'});",
-                  "console.log('🔐 JWT + gateway header added');"
-                ]
-              }
-            }
-          ],
+          "name": "12. List Available Delivery Persons (Gateway)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/delivery?limit=10&offset=0&onlyAvailable=true",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/delivery?onlyAvailable=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "delivery"],
               "query": [
-                {"key": "limit", "value": "10"},
-                {"key": "offset", "value": "0"},
-                {"key": "onlyAvailable", "value": "true"}
+                {
+                  "key": "onlyAvailable",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "GET /profiles/search - Advanced Search",
-          "description": "Advanced profile search with filters.\n\n**Auth**: Required + X-Client: gateway header\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "pm.request.headers.add({key: 'x-client', value: 'gateway'});",
-                  "console.log('🔐 JWT + gateway header added');"
-                ]
-              }
-            }
-          ],
+          "name": "13. Search Profiles Advanced (Gateway)",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/search?tipo=repartidor&disponible=true&limit=10&offset=0",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/search?tipo=repartidor&disponible=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "search"],
               "query": [
-                {"key": "tipo", "value": "repartidor"},
-                {"key": "disponible", "value": "true"},
-                {"key": "limit", "value": "10"},
-                {"key": "offset", "value": "0"}
+                {
+                  "key": "tipo",
+                  "value": "repartidor",
+                  "disabled": true
+                },
+                {
+                  "key": "disponible",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /profiles/{profileId}/reserve - Reserve Profile (Atomic)",
-          "description": "Atomically reserve a delivery person profile.\n\n**Auth**: Required + X-Client: gateway header\n**Status**: 200 OK (reserved) or 409 Conflict (unavailable)",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "pm.request.headers.add({key: 'x-client', value: 'gateway'});",
-                  "console.log('🔐 JWT + gateway header added');"
-                ]
-              }
-            }
-          ],
+          "name": "14. Reserve Profile Atomic (Gateway)",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\"ttlSeconds\": 300}"
+              "raw": "{\n  \"ttlSeconds\": 300\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440001/reserve",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/reserve",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "reserve"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "POST /profiles/{profileId}/release - Release Reservation",
-          "description": "Release a profile's reservation.\n\n**Auth**: Required + X-Client: gateway header\n**Status**: 200 OK",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.environment.get('jwt_token') || 'NO_TOKEN_SET';",
-                  "pm.request.headers.add({key: 'Authorization', value: 'Bearer ' + token});",
-                  "pm.request.headers.add({key: 'x-client', value: 'gateway'});",
-                  "console.log('🔐 JWT + gateway header added');"
-                ]
-              }
-            }
-          ],
+          "name": "15. Release Profile Reservation (Gateway)",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:5000/api/profiles/550e8400-e29b-41d4-a716-446655440001/release",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000",
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/release",
+              "host": ["{{BASE_URL}}"],
               "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "release"]
             }
-          },
-          "response": []
+          }
         }
       ]
     },
     {
-      "name": "📚 Quick Reference",
-      "description": "API Documentation and error codes",
+      "name": "Error Cases - Testing",
       "item": [
         {
-          "name": "Error Response Codes",
-          "description": "**400 INVALID_REQUEST** - Validation failed\n**401 UNAUTHORIZED** - No JWT or invalid token\n**403 FORBIDDEN** - Insufficient permissions (role mismatch)\n**404 NOT_FOUND** - Resource not found\n**409 CONFLICT** - Resource already exists or operation conflicts\n**500 INTERNAL_ERROR** - Server error",
+          "name": "Missing Authorization Header",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5000"
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Invalid JWT Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.here",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
+            }
+          }
+        },
+        {
+          "name": "Insufficient Permissions - Usuario tries Admin endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Profile Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        },
+        {
+          "name": "Validation Error - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Conflict - Profile Already Exists",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"usuario\",\n  \"nombre\": \"Another Profile\",\n  \"telefono\": \"+34987654321\",\n  \"direccion\": \"Different Address 456\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Conflict - Reserve Unavailable Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ttlSeconds\": 300\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/reserve",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "reserve"]
+            }
+          }
         }
       ]
     }
   ],
   "variable": [
-    {"key": "base_url", "value": "http://localhost:5000", "type": "string"},
-    {"key": "active_role", "value": "usuario", "type": "string"},
-    {"key": "jwt_token", "value": "", "type": "string"},
-    {"key": "jwt_usuario_token", "value": "", "type": "string"},
-    {"key": "jwt_repartidor_token", "value": "", "type": "string"},
-    {"key": "jwt_admin_token", "value": "", "type": "string"},
-    {"key": "test_user_id", "value": "550e8400-e29b-41d4-a716-446655440000", "type": "string"},
-    {"key": "test_delivery_user_id", "value": "550e8400-e29b-41d4-a716-446655440001", "type": "string"},
-    {"key": "test_admin_user_id", "value": "550e8400-e29b-41d4-a716-446655440002", "type": "string"}
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "USUARIO_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzdWFyaW9AcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJ1c3VhcmlvIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC11c2VyLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.Tg22bVAG9RRBo5DI5CYzSS3_H2b85pIY61nzluvB7O8",
+      "type": "string"
+    },
+    {
+      "key": "REPARTIDOR_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJlbWFpbCI6InJlcGFydGlkb3JAcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJyZXBhcnRpZG9yIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC1yZXBhcnRpZG9yLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.cgOgs5skbTdunwvIwmf062UrzSAf6kr0C3QCOGzIkhw",
+      "type": "string"
+    },
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJlbWFpbCI6ImFkbWluQHBlZGlkb3NjYW1wdXMubG9jYWwiLCJyb2xlIjoiYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoibWFudWFsLWFkbWluLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.0iC3Lpk_pTWsoRPSyrdXNliw8eBQwh8JME3MMhUA5S4",
+      "type": "string"
+    }
   ]
 }

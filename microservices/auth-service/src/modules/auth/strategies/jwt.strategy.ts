@@ -18,6 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   validate(payload: AccessTokenPayload): AuthenticatedUser {
+    // Defensa extra: solo acepta payloads de access token.
     if (payload.type !== 'access') {
       throw new UnauthorizedException('Token de acceso invalido');
     }

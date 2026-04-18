@@ -54,6 +54,7 @@ export class AuthService {
       },
     });
 
+    // Registro y login comparten la misma creacion de sesion.
     return this.createSession(user);
   }
 
@@ -89,6 +90,7 @@ export class AuthService {
   }
 
   async validateRefreshToken(refreshToken: string): Promise<RefreshRequestUser> {
+    // Nunca se consulta por token plano, siempre por hash.
     const tokenHash = this.hashToken(refreshToken);
 
     const tokenRecord = await this.prisma.refreshToken.findFirst({
@@ -100,6 +102,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token invalido');
     }
 
+    // Si un refresh ya revocado vuelve a usarse, se asume posible robo/replay.
     if (tokenRecord.revokedAt) {
       // Reuse detection: token revocado reutilizado -> cerrar todas las sesiones del usuario.
       await this.revokeAllActiveRefreshTokens(tokenRecord.userId);
@@ -107,6 +110,7 @@ export class AuthService {
     }
 
     if (tokenRecord.expiresAt <= new Date()) {
+      // Si expiro, se marca revocado para impedir cualquier reutilizacion posterior.
       await this.revokeRefreshTokenById(tokenRecord.id);
       throw new UnauthorizedException('Refresh token expirado');
     }
@@ -142,6 +146,7 @@ export class AuthService {
     );
 
     const now = new Date();
+    // Operacion atomica: revoca el token usado y crea el siguiente refresh.
     await this.prisma.$transaction([
       this.prisma.refreshToken.update({
         where: { id: user.refreshTokenId },
@@ -177,6 +182,7 @@ export class AuthService {
     });
 
     if (!tokenRecord) {
+      // Logout idempotente: si no existe token activo, no falla.
       return;
     }
 
@@ -250,10 +256,12 @@ export class AuthService {
   }
 
   private hashToken(token: string): string {
+    // Solo persistimos hash en BD para no almacenar refresh tokens en texto plano.
     return createHash('sha256').update(token).digest('hex');
   }
 
   private getRefreshTokenExpiryDate(): Date {
+    // Mantiene una sola fuente de verdad para expiracion de refresh.
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
     return expiresAt;
@@ -267,6 +275,7 @@ export class AuthService {
   }
 
   private async revokeAllActiveRefreshTokens(userId: string): Promise<void> {
+    // Corte global de sesiones del usuario (reuse detection o usuario inactivo).
     await this.prisma.refreshToken.updateMany({
       where: {
         userId,

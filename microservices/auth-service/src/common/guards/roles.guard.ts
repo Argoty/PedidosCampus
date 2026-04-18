@@ -14,6 +14,7 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Lee metadata @Roles del handler/controlador.
     const requiredRoles = this.reflector.getAllAndOverride<AuthRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),

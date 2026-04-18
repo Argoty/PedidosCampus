@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   let authService: AuthService;
 
+  // Mock central de Prisma para pruebas unitarias sin BD real.
   const prismaMock = {
     authUser: {
       findUnique: jest.fn(),

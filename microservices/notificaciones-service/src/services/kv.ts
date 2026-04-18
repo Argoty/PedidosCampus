@@ -78,6 +78,7 @@ function parseNotification(raw: string | null): NotificationRecord | null {
       readAt: typeof parsed.readAt === "string" ? parsed.readAt : null,
     };
   } catch {
+    // Evita romper el flujo si un registro KV esta corrupto.
     return null;
   }
 }
@@ -140,6 +141,7 @@ export async function listNotificationsByUser(
   const notifications = rawValues
     .map(parseNotification)
     .filter((item): item is NotificationRecord => item !== null)
+    // Orden descendente por fecha para mostrar primero lo mas reciente.
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return {
@@ -162,10 +164,12 @@ export async function markNotificationAsRead(
   const rawNotification = await env.NOTIFICATIONS.get(primaryKey);
   const notification = parseNotification(rawNotification);
   if (!notification) {
+    // Si el registro principal se perdio, se comporta como "no encontrado".
     return null;
   }
 
   if (notification.leida) {
+    // Idempotencia: si ya estaba leida, responde el mismo estado sin reescribir.
     return notification;
   }
 

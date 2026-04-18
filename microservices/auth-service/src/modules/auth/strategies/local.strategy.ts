@@ -7,6 +7,7 @@ import { SafeAuthUser } from '../interfaces/auth.interfaces';
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly authService: AuthService) {
+    // Passport-local usa "username" por defecto; aqui autenticamos por email.
     super({ usernameField: 'email', passwordField: 'password' });
   }
 

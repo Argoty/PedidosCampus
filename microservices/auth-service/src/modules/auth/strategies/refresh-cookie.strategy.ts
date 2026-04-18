@@ -25,6 +25,7 @@ export class RefreshCookieStrategy extends PassportStrategy(
       throw new UnauthorizedException('Refresh token no enviado');
     }
 
+    // Devuelve usuario autenticado por refresh y el id del token para rotation.
     return this.authService.validateRefreshToken(refreshToken);
   }
 }

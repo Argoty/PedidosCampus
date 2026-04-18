@@ -40,6 +40,7 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
+    // Flujo de registro: crear usuario + abrir sesion inicial (access + refresh cookie).
     const session = await this.authService.register(registerDto);
 
     this.setRefreshCookie(response, session.refreshToken);
@@ -57,6 +58,7 @@ export class AuthController {
     @CurrentUser() user: SafeAuthUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
+    // LocalAuthGuard ya valido credenciales y cargo request.user.
     const session = await this.authService.login(user);
 
     this.setRefreshCookie(response, session.refreshToken);
@@ -73,6 +75,7 @@ export class AuthController {
     @CurrentUser() user: RefreshRequestUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
+    // Rotation: invalida refresh anterior y emite uno nuevo.
     const session = await this.authService.refreshTokens(user);
 
     this.setRefreshCookie(response, session.refreshToken);
@@ -89,6 +92,7 @@ export class AuthController {
     @CurrentUser() user: RefreshRequestUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
+    // Revoca el refresh activo de la cookie actual.
     await this.authService.logoutByRefreshToken(user.refreshToken);
     this.clearRefreshCookie(response);
 
@@ -131,6 +135,7 @@ export class AuthController {
   }
 
   private isSecureCookie(): boolean {
+    // En local HTTP usar false; en produccion HTTPS debe ser true.
     return (process.env.COOKIE_SECURE ?? 'true').toLowerCase() === 'true';
   }
 }

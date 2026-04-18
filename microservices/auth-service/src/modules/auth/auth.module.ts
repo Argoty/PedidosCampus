@@ -16,6 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
     AuthService,
     LocalStrategy,
     JwtStrategy,
+    // Estrategia de refresh basada en cookie HttpOnly (token opaco).
     RefreshCookieStrategy,
     RolesGuard,
   ],

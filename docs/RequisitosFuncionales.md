@@ -32,12 +32,12 @@ La plataforma cuenta con tres tipos de actores: **usuarios** (realizan pedidos),
 | Microservicio | Tecnología | Base de Datos | Tipo |
 |---|---|---|---|
 | Gateway | NestJS | — | Enrutamiento y seguridad |
-| Auth | NestJS + Passport | PostgreSQL | JWT, Refresh Token, Roles |
+| Auth | NestJS | PostgreSQL | JWT, Refresh Token, Roles |
 | Usuarios | C# .NET 8 | PostgreSQL | Clientes y repartidores |
 | Restaurantes | Python + FastAPI | PostgreSQL | Menús y productos |
 | Pedidos | Go + Gin | PostgreSQL | Core del negocio |
 | Notificaciones | TypeScript (Cloudflare Workers) | Cloudflare KV | Serverless |
-| Calificaciones | Rust + Actix-web | PostgreSQL | Reviews y promedios |
+| Calificaciones | Rust + Axum | PostgreSQL | Reviews y promedios |
 | Agente IA | Python + FastAPI | — | LLM integrado para admin |
 
 **Broker de mensajería:** RabbitMQ  

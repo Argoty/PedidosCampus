@@ -194,7 +194,13 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/activate",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "activate"]
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "activate"
+              ]
             }
           }
         },
@@ -212,7 +218,13 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/deactivate",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "deactivate"]
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "deactivate"
+              ]
             }
           }
         }
@@ -235,7 +247,13 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products?disponible=true&limit=100&offset=0",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "products"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "products"
+              ],
               "query": [
                 {
                   "key": "disponible",
@@ -299,7 +317,13 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "restaurants", "{{restaurante_id}}", "products"]
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "products"
+              ]
             }
           }
         },
@@ -369,7 +393,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"producto_id\": \"{{producto_id}}\",\n      \"cantidad\": 2,\n      \"precio_unitario\": 12.99\n    },\n    {\n      \"producto_id\": \"<otro_producto_id>\",\n      \"cantidad\": 1,\n      \"precio_unitario\": 8.50\n    }\n  ]\n}"
+              "raw": "{\n  \"items\": [\n    {\n      \"producto_id\": \"{{producto_id}}\",\n      \"cantidad\": 2,\n      \"precio_unit\": 12.99\n    },\n    {\n      \"producto_id\": \"<otro_producto_id>\",\n      \"cantidad\": 1,\n      \"precio_unitario\": 8.50\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/api/v1/products/validate-batch",
@@ -435,7 +459,12 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/restaurants/00000000-0000-0000-0000-000000000000",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "restaurants", "00000000-0000-0000-0000-000000000000"]
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "00000000-0000-0000-0000-000000000000"
+              ]
             }
           }
         },
@@ -453,7 +482,12 @@
             "url": {
               "raw": "{{BASE_URL}}/api/v1/products/00000000-0000-0000-0000-000000000000",
               "host": ["{{BASE_URL}}"],
-              "path": ["api", "v1", "products", "00000000-0000-0000-0000-000000000000"]
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "00000000-0000-0000-0000-000000000000"
+              ]
             }
           }
         }

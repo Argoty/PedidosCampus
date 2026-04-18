@@ -6,7 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { RefreshCookieStrategy } from './strategies/refresh-cookie.strategy';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
@@ -16,7 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
     AuthService,
     LocalStrategy,
     JwtStrategy,
-    JwtRefreshStrategy,
+    RefreshCookieStrategy,
     RolesGuard,
   ],
   exports: [AuthService],

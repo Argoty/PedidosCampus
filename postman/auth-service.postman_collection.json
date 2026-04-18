@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "PedidosCampus - Auth Service",
-    "description": "Coleccion minima para probar el microservicio de autenticacion en local.",
+    "description": "Coleccion minima para probar auth con refresh token opaco en cookie HttpOnly.\n\nImportante en Postman:\n1) Deja habilitado el Cookie Jar (Settings > General > Enable cookie jar).\n2) Usa siempre la misma pestaña/collection para login -> refresh -> logout.\n3) No envies refresh token por body/header: el backend solo lo lee desde cookie.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -27,10 +27,6 @@
     },
     {
       "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "refreshToken",
       "value": ""
     }
   ],
@@ -67,7 +63,13 @@
             "exec": [
               "const json = pm.response.json();",
               "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
-              "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+              "pm.test('No refresh token in body', function () {",
+              "    pm.expect(json.refreshToken).to.eql(undefined);",
+              "});",
+              "pm.test('Set-Cookie contains refresh_token', function () {",
+              "    const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+              "    pm.expect(setCookie).to.include('refresh_token=');",
+              "});"
             ]
           }
         }
@@ -105,7 +107,13 @@
             "exec": [
               "const json = pm.response.json();",
               "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
-              "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+              "pm.test('No refresh token in body', function () {",
+              "    pm.expect(json.refreshToken).to.eql(undefined);",
+              "});",
+              "pm.test('Set-Cookie contains refresh_token', function () {",
+              "    const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+              "    pm.expect(setCookie).to.include('refresh_token=');",
+              "});"
             ]
           }
         }
@@ -137,18 +145,8 @@
       }
     },
     {
-      "name": "04 - Refresh (Refresh Token)",
+      "name": "04 - Refresh (Cookie Only)",
       "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{refreshToken}}",
-              "type": "string"
-            }
-          ]
-        },
         "method": "POST",
         "url": {
           "raw": "{{baseUrl}}/refresh",
@@ -168,25 +166,21 @@
             "exec": [
               "const json = pm.response.json();",
               "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
-              "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+              "pm.test('No refresh token in body', function () {",
+              "    pm.expect(json.refreshToken).to.eql(undefined);",
+              "});",
+              "pm.test('Refresh rotates cookie', function () {",
+              "    const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+              "    pm.expect(setCookie).to.include('refresh_token=');",
+              "});"
             ]
           }
         }
       ]
     },
     {
-      "name": "05 - Logout (Refresh Token)",
+      "name": "05 - Logout (Cookie Only)",
       "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{refreshToken}}",
-              "type": "string"
-            }
-          ]
-        },
         "method": "POST",
         "url": {
           "raw": "{{baseUrl}}/logout",
@@ -197,7 +191,21 @@
             "logout"
           ]
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout clears refresh cookie', function () {",
+              "    const setCookie = pm.response.headers.get('Set-Cookie') || '';",
+              "    pm.expect(setCookie).to.include('refresh_token=;');",
+              "});"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "06 - Admin Ping (Access Token)",

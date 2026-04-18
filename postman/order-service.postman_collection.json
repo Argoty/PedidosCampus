@@ -5,16 +5,6 @@
     "description": "PedidosCampus Order Service - Complete API testing collection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{USUARIO_TOKEN}}",
-        "type": "string"
-      }
-    ]
-  },
   "item": [
     {
       "name": "Health",
@@ -184,7 +174,7 @@
             ],
             "body": {
               "mode": "raw",
-                "raw": "{\n  \"toEstado\": \"en_camino\"\n}"
+              "raw": "{\n  \"toEstado\": \"en_camino\"\n}"
             },
             "url": {
               "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/status",
@@ -234,7 +224,11 @@
             "url": {
               "raw": "{{BASE_URL}}/orders/deliverer/550e8400-e29b-41d4-a716-446655440003",
               "host": ["{{BASE_URL}}"],
-              "path": ["orders", "deliverer", "550e8400-e29b-41d4-a716-446655440003"],
+              "path": [
+                "orders",
+                "deliverer",
+                "550e8400-e29b-41d4-a716-446655440003"
+              ],
               "query": [
                 {
                   "key": "limit",
@@ -417,7 +411,11 @@
             "url": {
               "raw": "{{BASE_URL}}/orders/deliverer/550e8400-e29b-41d4-a716-446655440003",
               "host": ["{{BASE_URL}}"],
-              "path": ["orders", "deliverer", "550e8400-e29b-41d4-a716-446655440003"]
+              "path": [
+                "orders",
+                "deliverer",
+                "550e8400-e29b-41d4-a716-446655440003"
+              ]
             }
           }
         },

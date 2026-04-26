@@ -44,6 +44,7 @@ Los logs de cada test se guardan en `/tmp/`:
 - `/tmp/user-tests.log`
 - `/tmp/restaurant-tests.log`
 - `/tmp/order-tests.log`
+- `/tmp/rating-tests.log`
 
 ---
 
@@ -133,7 +134,8 @@ Presiona `Ctrl+C` en la terminal para detener todos los servidores simultáneame
 | user-service | xUnit | 21 | ✅ |
 | restaurant-service | pytest | 27 | ✅ |
 | order-service | Go | 15 | ✅ |
-| **TOTAL** | — | **64** | **✅** |
+| rating-service | Cargo | 5 | ✅ |
+| **TOTAL** | — | **79** | **✅** |
 
 ---
 

@@ -9,6 +9,7 @@ Colecciones para manual testing de microservicios.
 File → Import → postman/user-service.postman_collection.json
 File → Import → postman/order-service.postman_collection.json
 File → Import → postman/restaurant-service.postman_collection.json
+File → Import → postman/rating-service.postman_collection.json
 ```
 ✅ Automáticamente para cada colección:
 - 12+ endpoints con JWT pre-injection por rol
@@ -30,6 +31,7 @@ Cada colección tiene variables de colección preconfiguradas:
 | **User Service** | `user-service.postman_collection.json` | GET/POST/PATCH/DELETE `/api/profiles*` | `http://localhost:5000` | ✅ JWT (usuario/repartidor/admin) |
 | **Order Service** | `order-service.postman_collection.json` | GET/POST `/orders*` | `http://localhost:8002` | ✅ JWT (usuario/admin) |
 | **Restaurant Service** | `restaurant-service.postman_collection.json` | GET/POST/PATCH/DELETE `/api/v1/restaurants*` | `http://localhost:8001` | ✅ JWT (public/admin) |
+| **Rating Service** | `rating-service.postman_collection.json` | GET/POST/PATCH/DELETE `/ratings/{restaurant,delivery}*` | `http://localhost:8003` | ✅ JWT (usuario) |
 
 ### Restaurant Service Collection (`postman/restaurant-service.postman_collection.json`)
 
@@ -116,8 +118,9 @@ curl http://localhost:5000/swagger/v1/swagger.json
 - ✅ **User Service**: 15+ endpoints, JWT (usuario/repartidor/admin), soft delete + deactivate
 - ✅ **Order Service**: 10+ endpoints, JWT (usuario/admin)
 - ✅ **Restaurant Service**: 12 endpoints, JWT (public/admin), soft delete only
+- ✅ **Rating Service**: 14 endpoints, JWT (usuario), CRUD + stats para restaurantes y repartidores
 - ✅ All collections: Pre-configured variables, correct tokens, role-based headers
-- ✅ Docker integration: Each service on different port (`5000`, `8001`, `8002`, etc.)
+- ✅ Docker integration: Each service on different port (`5000`, `8001`, `8002`, `8003`, etc.)
 
 **Verification:**
 ```bash

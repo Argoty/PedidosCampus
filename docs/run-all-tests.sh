@@ -25,7 +25,7 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 # Arrays para tracking
-SERVICES=("auth-service" "notificaciones-service" "user-service" "restaurant-service" "order-service")
+SERVICES=("auth-service" "notificaciones-service" "user-service" "restaurant-service" "order-service" "rating-service")
 PASSED=()
 FAILED=()
 
@@ -115,6 +115,23 @@ else
 fi
 
 ##############################################################################
+# 6. RATING-SERVICE (Rust + Cargo)
+##############################################################################
+echo -e "${YELLOW}▶ Running rating-service tests (Cargo)...${NC}"
+if cd "$SERVICES_DIR/rating-service"; then
+	if cargo test --lib 2>&1 | tee /tmp/rating-tests.log; then
+		PASSED+=("rating-service")
+		echo -e "${GREEN}✅ rating-service: PASSED${NC}\n"
+	else
+		FAILED+=("rating-service")
+		echo -e "${RED}❌ rating-service: FAILED${NC}\n"
+	fi
+else
+	FAILED+=("rating-service")
+	echo -e "${RED}❌ rating-service: Directory not found${NC}\n"
+fi
+
+##############################################################################
 # RESUMEN FINAL
 ##############################################################################
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
@@ -122,8 +139,8 @@ echo -e "${BLUE}║                     RESUMEN DE RESULTADOS                   
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-if [ ${#PASSED[@]} -eq 5 ]; then
-	echo -e "${GREEN}✅ TODOS LOS TESTS PASARON (5/5)${NC}"
+if [ ${#PASSED[@]} -eq 6 ]; then
+	echo -e "${GREEN}✅ TODOS LOS TESTS PASARON (6/6)${NC}"
 	echo ""
 	for service in "${PASSED[@]}"; do
 		echo -e "  ${GREEN}✓${NC} $service"
@@ -132,12 +149,12 @@ if [ ${#PASSED[@]} -eq 5 ]; then
 else
 	echo -e "${RED}❌ ALGUNOS TESTS FALLARON${NC}"
 	echo ""
-	echo -e "${GREEN}Pasados (${#PASSED[@]}/5):${NC}"
+	echo -e "${GREEN}Pasados (${#PASSED[@]}/6):${NC}"
 	for service in "${PASSED[@]}"; do
 		echo -e "  ${GREEN}✓${NC} $service"
 	done
 	echo ""
-	echo -e "${RED}Fallidos (${#FAILED[@]}/5):${NC}"
+	echo -e "${RED}Fallidos (${#FAILED[@]}/6):${NC}"
 	for service in "${FAILED[@]}"; do
 		echo -e "  ${RED}✗${NC} $service"
 	done

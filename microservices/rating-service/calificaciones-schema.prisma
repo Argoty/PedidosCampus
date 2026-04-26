@@ -1,0 +1,44 @@
+// Microservicio: Calificaciones (PostgreSQL)
+// Alcance: reseñas de restaurantes y repartidores asociadas a pedido completado.
+// Nota: userId, pedidoId, restauranteId y repartidorId son referencias lógicas externas (sin FK cruzadas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CALIFICACIONES_DATABASE_URL")
+}
+
+model CalificacionRestaurante {
+  id            String   @id @default(uuid()) @db.Uuid
+  pedidoId      String   @db.Uuid
+  userId        String   @db.Uuid
+  restauranteId String   @db.Uuid
+  estrellas     Int
+  comentario    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([restauranteId])
+  @@index([userId])
+  @@unique([pedidoId, userId])
+  @@map("calificaciones_restaurante")
+}
+
+model CalificacionRepartidor {
+  id           String   @id @default(uuid()) @db.Uuid
+  pedidoId     String   @db.Uuid
+  userId       String   @db.Uuid
+  repartidorId String   @db.Uuid
+  estrellas    Int
+  comentario   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([repartidorId])
+  @@index([userId])
+  @@unique([pedidoId, userId])
+  @@map("calificaciones_repartidor")
+}

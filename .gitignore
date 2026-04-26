@@ -63,6 +63,17 @@ vendor/
 go.work
 
 # ============================================================
+# RUST (Rating Service)
+# ============================================================
+# Compilation artifacts
+target/
+Cargo.lock
+
+# Rust debug files
+*.pdb
+*.rlib
+
+# ============================================================
 # NODE.JS / NPM (Auth Service, User Service)
 # ============================================================
 node_modules/

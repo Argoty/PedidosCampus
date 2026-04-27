@@ -131,7 +131,7 @@ services:
       DATABASE_URL: postgres://order_user:${ORDER_DB_PASSWORD:-order_password}@order-db:5432/order_db?sslmode=disable
       DATABASE_LOG_LEVEL: info
       SERVICE_TOKEN: ${SERVICE_TOKEN}
-      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL}
+      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
       RABBITMQ_URL: ""
       RABBITMQ_EXCHANGE: orders
@@ -157,8 +157,7 @@ services:
       USER_SERVICE_URL: http://user-service:5000
       RESTAURANT_SERVICE_URL: http://restaurant-service:8001
       ORDER_SERVICE_URL: http://order-service:8002
-      # URL mock o real del worker de notificaciones según red de docker
-      NOTIFICACIONES_SERVICE_URL: https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev
+      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
     ports:
       - "3000:3000"
     depends_on:

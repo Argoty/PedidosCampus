@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PedidosCampus/order-service/internal/dto"
@@ -128,17 +130,28 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 		if notifURL == "" {
 			return
 		}
+
+		notifEndpoint := strings.TrimRight(notifURL, "/") + "/notifications"
 		payload := map[string]interface{}{
 			"userId":  createdPedido.UserID.String(),
 			"tipo":    "PEDIDO_CREADO",
 			"mensaje": fmt.Sprintf("Tu pedido en el restaurante %s ha sido creado con exito.", createdPedido.RestauranteID.String()),
 		}
 		jsonData, _ := json.Marshal(payload)
-		httpReq, _ := http.NewRequest("POST", notifURL+"/notificaciones", bytes.NewBuffer(jsonData))
+		httpReq, _ := http.NewRequest("POST", notifEndpoint, bytes.NewBuffer(jsonData))
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("x-service-token", os.Getenv("SERVICE_TOKEN"))
+
 		client := &http.Client{Timeout: 5 * time.Second}
-		client.Do(httpReq)
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			log.Printf("notification call failed for order %s: %v", createdPedido.ID.String(), err)
+			return
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			log.Printf("notification returned status %d for order %s", resp.StatusCode, createdPedido.ID.String())
+		}
 	}()
 
 	return createdPedido, nil

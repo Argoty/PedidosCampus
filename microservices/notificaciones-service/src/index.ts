@@ -45,7 +45,7 @@ export default {
         return withCorsHeaders(new Response(null, { status: 204 }));
       }
 
-      const envServiceToken = (env as any).SERVICE_TOKEN;
+      const envServiceToken = env.SERVICE_TOKEN;
       if (request.headers.get("x-service-token") !== envServiceToken) {
         return withCorsHeaders(jsonResponse({ error: "Forbidden" }, 403));
       }

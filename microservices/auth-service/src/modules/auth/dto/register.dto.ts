@@ -14,6 +14,14 @@ export class RegisterDto {
   password!: string;
 
   @IsOptional()
+  @IsString()
+  telefono?: string;
+
+  @IsOptional()
+  @IsString()
+  direccion?: string;
+
+  @IsOptional()
   // Si no llega role, AuthService asigna "usuario" por defecto.
   @IsEnum(AuthRole)
   role?: AuthRole;

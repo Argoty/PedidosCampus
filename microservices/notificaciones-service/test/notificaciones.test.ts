@@ -34,15 +34,21 @@ function createEnv(): Env {
   // Simula los bindings que Wrangler entrega en runtime.
   return {
     NOTIFICATIONS: new InMemoryKV() as unknown as KVNamespace,
+    SERVICE_TOKEN: "test-service-token",
   };
 }
+
+const authHeaders = {
+  "content-type": "application/json",
+  "x-service-token": "test-service-token",
+};
 
 describe("notificaciones worker", () => {
   it("crea una notificacion", async () => {
     const env = createEnv();
-    const request = new Request("http://localhost/notificaciones", {
+    const request = new Request("http://localhost/notifications", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         userId: "u-123",
         tipo: "PEDIDO_ESTADO_CAMBIADO",
@@ -75,9 +81,9 @@ describe("notificaciones worker", () => {
 
     const createForUserA = async (mensaje: string) => {
       await worker.fetch(
-        new Request("http://localhost/notificaciones", {
+        new Request("http://localhost/notifications", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({
             userId: "user-a",
             tipo: "TEST",
@@ -93,9 +99,9 @@ describe("notificaciones worker", () => {
     await createForUserA("segunda");
 
     await worker.fetch(
-      new Request("http://localhost/notificaciones", {
+      new Request("http://localhost/notifications", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify({
           userId: "user-b",
           tipo: "TEST",
@@ -107,7 +113,9 @@ describe("notificaciones worker", () => {
     );
 
     const response = await worker.fetch(
-      new Request("http://localhost/notificaciones/user-a"),
+      new Request("http://localhost/notifications/user-a", {
+        headers: { "x-service-token": "test-service-token" },
+      }),
       env,
       {} as ExecutionContext,
     );
@@ -128,9 +136,9 @@ describe("notificaciones worker", () => {
     const env = createEnv();
 
     const createResponse = await worker.fetch(
-      new Request("http://localhost/notificaciones", {
+      new Request("http://localhost/notifications", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify({
           userId: "reader-1",
           tipo: "PEDIDO_ENTREGADO",
@@ -144,8 +152,9 @@ describe("notificaciones worker", () => {
     const created = (await createResponse.json()) as { id: string };
 
     const patchResponse = await worker.fetch(
-      new Request(`http://localhost/notificaciones/${created.id}/leer`, {
+      new Request(`http://localhost/notifications/${created.id}/leer`, {
         method: "PATCH",
+        headers: { "x-service-token": "test-service-token" },
       }),
       env,
       {} as ExecutionContext,
@@ -161,7 +170,9 @@ describe("notificaciones worker", () => {
   it("responde health", async () => {
     const env = createEnv();
     const response = await worker.fetch(
-      new Request("http://localhost/health"),
+      new Request("http://localhost/health", {
+        headers: { "x-service-token": "test-service-token" },
+      }),
       env,
       {} as ExecutionContext,
     );

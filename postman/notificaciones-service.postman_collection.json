@@ -1,13 +1,21 @@
 {
   "info": {
     "name": "PedidosCampus - Notificaciones Service",
-    "description": "Coleccion minima para probar el microservicio serverless de notificaciones en Cloudflare Workers.",
+    "description": "Coleccion minima para probar notificaciones via gateway y health directo del worker.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://127.0.0.1:8787"
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "workerUrl",
+      "value": "https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev"
+    },
+    {
+      "key": "serviceToken",
+      "value": "internal_super_secret_token_123"
     },
     {
       "key": "userId",
@@ -16,6 +24,10 @@
     {
       "key": "notifId",
       "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
     }
   ],
   "item": [
@@ -23,13 +35,19 @@
       "name": "01 - Health",
       "request": {
         "method": "GET",
-        "url": {
-          "raw": "{{baseUrl}}/health",
-          "host": [
-            "{{baseUrl}}"
+          "header": [
+            {
+              "key": "x-service-token",
+              "value": "{{serviceToken}}"
+            }
           ],
-          "path": [
-            "health"
+          "url": {
+            "raw": "{{workerUrl}}/health",
+            "host": [
+              "{{workerUrl}}"
+            ],
+            "path": [
+              "health"
           ]
         }
       }
@@ -42,6 +60,11 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
           }
         ],
         "body": {
@@ -49,12 +72,12 @@
           "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"tipo\": \"PEDIDO_ESTADO_CAMBIADO\",\n  \"mensaje\": \"Tu pedido va en camino\",\n  \"payload\": {\n    \"pedidoId\": \"p-100\",\n    \"estado\": \"en_camino\"\n  }\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/notificaciones",
+          "raw": "{{baseUrl}}/notifications",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
-            "notificaciones"
+            "notifications"
           ]
         }
       },
@@ -75,13 +98,20 @@
       "name": "03 - Listar por usuario",
       "request": {
         "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
         "url": {
-          "raw": "{{baseUrl}}/notificaciones/{{userId}}",
+          "raw": "{{baseUrl}}/notifications/{{userId}}",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
-            "notificaciones",
+            "notifications",
             "{{userId}}"
           ]
         }
@@ -91,13 +121,20 @@
       "name": "04 - Marcar como leida",
       "request": {
         "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
         "url": {
-          "raw": "{{baseUrl}}/notificaciones/{{notifId}}/leer",
+          "raw": "{{baseUrl}}/notifications/{{notifId}}/leer",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
-            "notificaciones",
+            "notifications",
             "{{notifId}}",
             "leer"
           ]

@@ -1,8 +1,16 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/PedidosCampus/order-service/internal/dto"
 	"github.com/PedidosCampus/order-service/internal/model"
@@ -115,6 +123,36 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 			s.publisher.PublishOrderCreated(context.Background(), event)
 		}()
 	}
+
+	// Sincronizar notificacion (WebHook local)
+	go func() {
+		notifURL := os.Getenv("NOTIFICACIONES_SERVICE_URL")
+		if notifURL == "" {
+			return
+		}
+
+		notifEndpoint := strings.TrimRight(notifURL, "/") + "/notifications"
+		payload := map[string]interface{}{
+			"userId":  createdPedido.UserID.String(),
+			"tipo":    "PEDIDO_CREADO",
+			"mensaje": fmt.Sprintf("Tu pedido en el restaurante %s ha sido creado con exito.", createdPedido.RestauranteID.String()),
+		}
+		jsonData, _ := json.Marshal(payload)
+		httpReq, _ := http.NewRequest("POST", notifEndpoint, bytes.NewBuffer(jsonData))
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("x-service-token", os.Getenv("SERVICE_TOKEN"))
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			log.Printf("notification call failed for order %s: %v", createdPedido.ID.String(), err)
+			return
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			log.Printf("notification returned status %d for order %s", resp.StatusCode, createdPedido.ID.String())
+		}
+	}()
 
 	return createdPedido, nil
 }

@@ -114,6 +114,16 @@ var app = builder.Build();
 // Aplicar CORS
 app.UseCors("AllowGateway");
 
+app.Use(async (context, next) => {
+    var expectedToken = builder.Configuration["SERVICE_TOKEN"];
+    if (context.Request.Method != "OPTIONS" && (!context.Request.Headers.TryGetValue("x-service-token", out var token) || token != expectedToken)) {
+        context.Response.StatusCode = 403;
+        await context.Response.WriteAsJsonAsync(new { error = "Forbidden" });
+        return;
+    }
+    await next();
+});
+
 // Swagger en desarrollo
 if (app.Environment.IsDevelopment())
 {

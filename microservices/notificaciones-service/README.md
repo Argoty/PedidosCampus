@@ -11,10 +11,14 @@ Microservicio serverless de notificaciones usando Cloudflare Workers (TypeScript
 
 ## Endpoints
 
-- `POST /notificaciones`
-- `GET /notificaciones/:userId`
-- `PATCH /notificaciones/:id/leer`
+- `POST /notifications`
+- `GET /notifications/:userId`
+- `PATCH /notifications/:id/leer`
 - `GET /health`
+
+Todos los endpoints (incluyendo `GET /health`) requieren header interno:
+
+- `x-service-token: <SERVICE_TOKEN>`
 
 ## Modelo de datos (basado en `notificaciones-schema.prisma`)
 
@@ -68,11 +72,15 @@ Asi se mantiene compatibilidad del contrato HTTP actual sin acoplar la logica de
 
 ## Variables de entorno
 
-Este microservicio no requiere variables de entorno obligatorias para el flujo base.
-Si mas adelante agregas secretos (por ejemplo, integraciones externas), usa:
+Este microservicio requiere `SERVICE_TOKEN` como secret en Cloudflare Workers.
+Usa:
 
 - `.dev.vars` para desarrollo local (no versionar)
 - `wrangler secret put <NOMBRE>` para produccion
+
+Ejemplo en produccion:
+
+- `wrangler secret put SERVICE_TOKEN`
 
 ## Ejecutar localmente
 

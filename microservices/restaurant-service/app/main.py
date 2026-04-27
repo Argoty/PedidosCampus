@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -28,6 +29,13 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+import os
+@app.middleware("http")
+async def check_service_token(request: Request, call_next):
+    if request.method != "OPTIONS" and request.headers.get("x-service-token") != os.getenv("SERVICE_TOKEN"):
+        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    return await call_next(request)
 
 # CORS Middleware
 app.add_middleware(

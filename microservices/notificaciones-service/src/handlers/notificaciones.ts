@@ -58,6 +58,10 @@ function asNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function isInvalidUserId(value: string): boolean {
+  return value.toLowerCase().startsWith("bearer ");
+}
+
 // Sanitiza query param para paginacion sin aceptar valores invalidos.
 function parseLimit(value: string | null): number | undefined {
   if (value === null) {
@@ -87,6 +91,10 @@ async function handleCreate(request: Request, env: Env): Promise<Response> {
     return errorResponse("Campos requeridos: userId, tipo, mensaje.");
   }
 
+  if (isInvalidUserId(userId)) {
+    return errorResponse("userId invalido.");
+  }
+
   // Hoy este endpoint simula la llegada de un evento asincrono.
   // Futuro: un consumer real de RabbitMQ/Kafka llamara esta misma capa de persistencia
   // o insertara directamente desde un trigger interno del microservicio.
@@ -103,6 +111,10 @@ async function handleCreate(request: Request, env: Env): Promise<Response> {
 async function handleListByUser(request: Request, env: Env, userId: string): Promise<Response> {
   const parsedUserId = asNonEmptyString(userId);
   if (!parsedUserId) {
+    return errorResponse("userId invalido.");
+  }
+
+  if (isInvalidUserId(parsedUserId)) {
     return errorResponse("userId invalido.");
   }
 
@@ -136,7 +148,7 @@ export async function routeNotificationEndpoints(
   pathname: string,
 ): Promise<RouteMatch> {
   // Router HTTP minimalista sin frameworks (requisito del proyecto).
-  if (pathname === "/notificaciones") {
+  if (pathname === "/notifications") {
     if (request.method === "POST") {
       return {
         handled: true,
@@ -150,7 +162,7 @@ export async function routeNotificationEndpoints(
     };
   }
 
-  const userListMatch = pathname.match(/^\/notificaciones\/([^/]+)$/);
+  const userListMatch = pathname.match(/^\/notifications\/([^/]+)$/);
   if (userListMatch) {
     if (request.method === "GET") {
       return {
@@ -165,7 +177,7 @@ export async function routeNotificationEndpoints(
     };
   }
 
-  const markReadMatch = pathname.match(/^\/notificaciones\/([^/]+)\/leer$/);
+  const markReadMatch = pathname.match(/^\/notifications\/([^/]+)\/leer$/);
   if (markReadMatch) {
     if (request.method === "PATCH") {
       return {

@@ -451,7 +451,7 @@
   "variable": [
     {
       "key": "BASE_URL",
-      "value": "http://localhost:8002",
+      "value": "http://localhost:3000",
       "type": "string"
     },
     {

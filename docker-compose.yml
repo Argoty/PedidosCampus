@@ -26,14 +26,14 @@ services:
       PORT: 3001
       AUTH_DATABASE_URL: postgresql://auth_user:${AUTH_DB_PASSWORD}@auth-db:5432/auth_db?schema=public
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      USER_SERVICE_URL: http://user-service:5000
       BCRYPT_SALT_ROUNDS: 10
       COOKIE_SECURE: "false"
       CORS_ORIGIN: http://localhost:3000
     depends_on:
       auth-db:
         condition: service_healthy
-    ports:
-      - "3001:3001"
     restart: unless-stopped
 
   user-db:
@@ -62,13 +62,12 @@ services:
       ASPNETCORE_ENVIRONMENT: ${USER_SERVICE_ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: ${USER_SERVICE_ASPNETCORE_URLS:-http://+:5000}
       ConnectionStrings__DefaultConnection: "Host=user-db;Port=5432;Database=user_db;Username=user_user;Password=${USER_DB_PASSWORD:-user_password}"
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       Jwt__AccessTokenSecret: ${ACCESS_TOKEN_SECRET}
     depends_on:
       user-db:
         condition: service_healthy
-    ports:
-      - "5000:5000"
     restart: unless-stopped
 
   restaurant-db:
@@ -95,14 +94,13 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://restaurant_user:${RESTAURANT_DB_PASSWORD:-restaurant_password}@restaurant-db:5432/restaurant_db
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       SECRET_KEY: ${ACCESS_TOKEN_SECRET}
       ALGORITHM: HS256
       DEBUG: "false"
     depends_on:
       restaurant-db:
         condition: service_healthy
-    ports:
-      - "8001:8001"
     restart: unless-stopped
 
   order-db:
@@ -132,6 +130,8 @@ services:
       SERVER_ENV: development
       DATABASE_URL: postgres://order_user:${ORDER_DB_PASSWORD:-order_password}@order-db:5432/order_db?sslmode=disable
       DATABASE_LOG_LEVEL: info
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
       RABBITMQ_URL: ""
       RABBITMQ_EXCHANGE: orders
@@ -142,8 +142,29 @@ services:
     depends_on:
       order-db:
         condition: service_healthy
+    restart: unless-stopped
+
+  gateway-service:
+    container_name: pedidoscampus-gateway
+    build:
+      context: ./microservices/gateway-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      JWT_SECRET: ${ACCESS_TOKEN_SECRET}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USER_SERVICE_URL: http://user-service:5000
+      RESTAURANT_SERVICE_URL: http://restaurant-service:8001
+      ORDER_SERVICE_URL: http://order-service:8002
+      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
     ports:
-      - "8002:8002"
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - user-service
+      - restaurant-service
+      - order-service
     restart: unless-stopped
 
 volumes:

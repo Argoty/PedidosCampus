@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "PedidosCampus - Auth Service",
-    "description": "Coleccion minima para probar auth con refresh token opaco en cookie HttpOnly.\n\nImportante en Postman:\n1) Deja habilitado el Cookie Jar (Settings > General > Enable cookie jar).\n2) Usa siempre la misma pestaña/collection para login -> refresh -> logout.\n3) No envies refresh token por body/header: el backend solo lo lee desde cookie.",
+    "description": "Coleccion minima para probar auth a traves del gateway con refresh token opaco en cookie HttpOnly.\n\nImportante en Postman:\n1) Deja habilitado el Cookie Jar (Settings > General > Enable cookie jar).\n2) Usa siempre la misma pestaña/collection para login -> refresh -> logout.\n3) No envies refresh token por body/header: el backend solo lo lee desde cookie.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3001/auth"
+      "value": "http://localhost:3000/auth"
     },
     {
       "key": "nombre",
@@ -43,7 +43,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nombre\": \"{{nombre}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"{{role}}\"\n}"
+          "raw": "{\n  \"nombre\": \"{{nombre}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"telefono\": \"+573001112233\",\n  \"direccion\": \"Campus Central Bloque A\",\n  \"role\": \"{{role}}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/register",
@@ -182,6 +182,13 @@
       "name": "05 - Logout (Cookie Only)",
       "request": {
         "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/logout",
           "host": [

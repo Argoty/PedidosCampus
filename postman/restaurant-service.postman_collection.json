@@ -2,13 +2,13 @@
   "info": {
     "_postman_id": "restaurant-service-collection",
     "name": "PedidosCampus - Restaurant Service",
-    "description": "PedidosCampus Restaurant Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:8001)\n   - ADMIN_TOKEN: [JWT with role: admin]\n   - PUBLIC_TOKEN: [JWT for public endpoints]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002\n- Public User ID: 550e8400-e29b-41d4-a716-446655440000\n\n**Port in Docker:** 8001\n**Database:** PostgreSQL (restaurant_db)",
+    "description": "PedidosCampus Restaurant Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:3000)\n   - ADMIN_TOKEN: [JWT with role: admin]\n   - PUBLIC_TOKEN: [JWT for public endpoints]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002\n- Public User ID: 550e8400-e29b-41d4-a716-446655440000\n\n**Port in Docker:** 8001\n**Database:** PostgreSQL (restaurant_db)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "BASE_URL",
-      "value": "http://localhost:8001",
+      "value": "http://localhost:3000",
       "type": "string"
     },
     {

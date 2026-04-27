@@ -26,6 +26,8 @@ services:
       PORT: 3001
       AUTH_DATABASE_URL: postgresql://auth_user:${AUTH_DB_PASSWORD}@auth-db:5432/auth_db?schema=public
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      USER_SERVICE_URL: http://user-service:5000
       BCRYPT_SALT_ROUNDS: 10
       COOKIE_SECURE: "false"
       CORS_ORIGIN: http://localhost:3000
@@ -60,6 +62,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${USER_SERVICE_ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: ${USER_SERVICE_ASPNETCORE_URLS:-http://+:5000}
       ConnectionStrings__DefaultConnection: "Host=user-db;Port=5432;Database=user_db;Username=user_user;Password=${USER_DB_PASSWORD:-user_password}"
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       Jwt__AccessTokenSecret: ${ACCESS_TOKEN_SECRET}
     depends_on:
@@ -91,6 +94,7 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://restaurant_user:${RESTAURANT_DB_PASSWORD:-restaurant_password}@restaurant-db:5432/restaurant_db
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       SECRET_KEY: ${ACCESS_TOKEN_SECRET}
       ALGORITHM: HS256
       DEBUG: "false"
@@ -126,6 +130,8 @@ services:
       SERVER_ENV: development
       DATABASE_URL: postgres://order_user:${ORDER_DB_PASSWORD:-order_password}@order-db:5432/order_db?sslmode=disable
       DATABASE_LOG_LEVEL: info
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL}
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
       RABBITMQ_URL: ""
       RABBITMQ_EXCHANGE: orders

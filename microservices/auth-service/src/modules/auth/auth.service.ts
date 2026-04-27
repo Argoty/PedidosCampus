@@ -27,7 +27,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<AuthSession> {
     const normalizedEmail = registerDto.email.trim().toLowerCase();
@@ -54,8 +54,36 @@ export class AuthService {
       },
     });
 
-    // Registro y login comparten la misma creacion de sesion.
-    return this.createSession(user);
+    const session = await this.createSession(user);
+
+    // Conexion sincrona a User Service para crear perfil
+    const userServiceUrl = process.env.USER_SERVICE_URL || 'http://user-service:5000';
+    try {
+      const resp = await fetch(`${userServiceUrl}/api/profiles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'x-service-token': process.env.SERVICE_TOKEN || '',
+        },
+        body: JSON.stringify({
+          Tipo: user.role,
+          Nombre: user.nombre,
+          Telefono: registerDto.telefono,
+          Direccion: registerDto.direccion,
+        }),
+      });
+
+      if (!resp.ok) {
+        throw new Error(`Profile rejected with ${resp.status}`);
+      }
+    } catch (error) {
+      // Rollback
+      await this.prisma.authUser.delete({ where: { id: user.id } });
+      throw new BadRequestException('Fallo la comunicacion con User Service, el registro ha sido rebotado.');
+    }
+
+    return session;
   }
 
   async login(user: SafeAuthUser): Promise<AuthSession> {

@@ -142,6 +142,41 @@ services:
     depends_on:
       order-db:
         condition: service_healthy
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
+  rating-db:
+    image: postgres:16-alpine
+    container_name: pedidoscampus-rating-db
+    environment:
+      POSTGRES_USER: rating_user
+      POSTGRES_PASSWORD: ${RATING_DB_PASSWORD:-rating_password}
+      POSTGRES_DB: rating_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - rating_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rating_user -d rating_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rating-service:
+    container_name: pedidoscampus-rating-service
+    build:
+      context: ./microservices/rating-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8003
+      RUST_LOG: info
+      DATABASE_URL: postgresql://rating_user:${RATING_DB_PASSWORD:-rating_password}@rating-db:5432/rating_db?sslmode=disable
+    depends_on:
+      rating-db:
+        condition: service_healthy
+    ports:
+      - "8003:8003"
     restart: unless-stopped
 
   gateway-service:
@@ -157,6 +192,7 @@ services:
       USER_SERVICE_URL: http://user-service:5000
       RESTAURANT_SERVICE_URL: http://restaurant-service:8001
       ORDER_SERVICE_URL: http://order-service:8002
+      CALIFICACIONES_SERVICE_URL: http://rating-service:8003
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
     ports:
       - "3000:3000"
@@ -172,3 +208,4 @@ volumes:
   user_postgres_data:
   restaurant_postgres_data:
   order_postgres_data:
+  rating_postgres_data:

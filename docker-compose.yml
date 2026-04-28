@@ -192,6 +192,7 @@ services:
       USER_SERVICE_URL: http://user-service:5000
       RESTAURANT_SERVICE_URL: http://restaurant-service:8001
       ORDER_SERVICE_URL: http://order-service:8002
+      CALIFICACIONES_SERVICE_URL: http://rating-service:8003
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
     ports:
       - "3000:3000"
@@ -201,7 +202,6 @@ services:
       - restaurant-service
       - order-service
     restart: unless-stopped
-
 
 volumes:
   auth_postgres_data:

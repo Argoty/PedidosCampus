@@ -43,6 +43,10 @@ const authHeaders = {
   "x-service-token": "test-service-token",
 };
 
+// JWT para test: sub=user-a
+const jwtUserA = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWEifQ.sig";
+const jwtReaderOne = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyZWFkZXItMSJ9.sig";
+
 describe("notificaciones worker", () => {
   it("crea una notificacion", async () => {
     const env = createEnv();
@@ -112,9 +116,13 @@ describe("notificaciones worker", () => {
       {} as ExecutionContext,
     );
 
+    // GET /notifications con JWT de user-a
     const response = await worker.fetch(
-      new Request("http://localhost/notifications/user-a", {
-        headers: { "x-service-token": "test-service-token" },
+      new Request("http://localhost/notifications", {
+        headers: {
+          "x-service-token": "test-service-token",
+          "authorization": `Bearer ${jwtUserA}`,
+        },
       }),
       env,
       {} as ExecutionContext,
@@ -154,7 +162,10 @@ describe("notificaciones worker", () => {
     const patchResponse = await worker.fetch(
       new Request(`http://localhost/notifications/${created.id}/leer`, {
         method: "PATCH",
-        headers: { "x-service-token": "test-service-token" },
+        headers: {
+          "x-service-token": "test-service-token",
+          "authorization": `Bearer ${jwtReaderOne}`,
+        },
       }),
       env,
       {} as ExecutionContext,

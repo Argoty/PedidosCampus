@@ -1,5 +1,9 @@
-import { AuthRole } from '@prisma/client';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsEnum, MinLength } from 'class-validator';
+
+export enum RegisterRole {
+  usuario = 'usuario',
+  repartidor = 'repartidor',
+}
 
 export class RegisterDto {
   @IsString()
@@ -22,7 +26,9 @@ export class RegisterDto {
   direccion?: string;
 
   @IsOptional()
-  // Si no llega role, AuthService asigna "usuario" por defecto.
-  @IsEnum(AuthRole)
-  role?: AuthRole;
+  @IsEnum(RegisterRole)
+  role?: RegisterRole = RegisterRole.usuario;
+
+  // NOTE: Solo se acepta "usuario" o "repartidor". "admin" NUNCA en registro.
+  // Para crear admins: usar migrations o admin API (futuro).
 }

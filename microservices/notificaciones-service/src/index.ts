@@ -9,7 +9,7 @@ function withCorsHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("access-control-allow-origin", "*");
   headers.set("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
-  headers.set("access-control-allow-headers", "content-type");
+  headers.set("access-control-allow-headers", "content-type,authorization");
 
   return new Response(response.body, {
     status: response.status,
@@ -32,6 +32,25 @@ function notFoundResponse(): Response {
 
 function methodNotAllowedResponse(): Response {
   return jsonResponse({ error: "Metodo no permitido." }, 405);
+}
+
+// Extraer userId del JWT sin verificacion (confiamos en que el Gateway lo verifico)
+function extractUserIdFromJwt(authHeader: string | null): string | null {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    // JWT: header.payload.signature
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.sub || null; // El campo 'sub' contiene el userId
+  } catch {
+    return null;
+  }
 }
 
 export default {
@@ -67,8 +86,19 @@ export default {
         return withCorsHeaders(methodNotAllowedResponse());
       }
 
-      // Delega endpoints de negocio a handlers especializados.
-      const notifRoute = await routeNotificationEndpoints(request, env, pathname);
+      // Extraer userId del JWT. Solo GET/PATCH usan userId.
+      // POST /notifications es Order Service (no requiere JWT).
+      const userId = extractUserIdFromJwt(request.headers.get("authorization"));
+      const needsAuth = (pathname === "/notifications" && request.method === "GET") ||
+                        pathname.match(/^\/notifications\/[^/]+\/leer$/);
+
+      if (needsAuth && !userId) {
+        return withCorsHeaders(
+          jsonResponse({ error: "Unauthorized - Missing or invalid JWT" }, 401)
+        );
+      }
+
+      const notifRoute = await routeNotificationEndpoints(request, env, pathname, userId || "");
       if (notifRoute.handled && notifRoute.response) {
         return withCorsHeaders(notifRoute.response);
       }

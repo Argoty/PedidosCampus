@@ -50,7 +50,7 @@ export class AuthService {
         nombre: registerDto.nombre.trim(),
         email: normalizedEmail,
         passwordHash,
-        role: registerDto.role ?? AuthRole.usuario,
+        role: registerDto.role === 'repartidor' ? AuthRole.repartidor : AuthRole.usuario,
       },
     });
 

@@ -1,0 +1,336 @@
+{
+  "info": {
+    "name": "PedidosCampus - Rating Service",
+    "description": "Colección completa para testing del microservicio de calificaciones (restaurantes y repartidores). Incluye CRUD, búsquedas y estadísticas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8003"
+    },
+    {
+      "key": "userId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "restauranteId",
+      "value": "650e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      "key": "repartidorId",
+      "value": "750e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "key": "pedidoId",
+      "value": "850e8400-e29b-41d4-a716-446655440003"
+    },
+    {
+      "key": "ratingId",
+      "value": ""
+    },
+    {
+      "key": "ratingDeliveryId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "01 - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurant Ratings",
+      "item": [
+        {
+          "name": "01 - Crear calificación restaurante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedido_id\": \"{{pedidoId}}\",\n  \"restaurante_id\": \"{{restauranteId}}\",\n  \"estrellas\": 5,\n  \"comentario\": \"Excelente comida, servicio rápido y muy atenta el personal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('ratingId', json.id);",
+                  "pm.test('Status 201', () => pm.response.code === 201);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Obtener calificación por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant/{{ratingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant", "{{ratingId}}"]
+            }
+          }
+        },
+        {
+          "name": "03 - Listar calificaciones del usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant/user/{{userId}}?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant", "user", "{{userId}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 - Listar calificaciones del restaurante",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant/restaurant/{{restauranteId}}?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant", "restaurant", "{{restauranteId}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 - Actualizar calificación",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estrellas\": 4,\n  \"comentario\": \"Muy buena comida, pero tardó un poco\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant/{{ratingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant", "{{ratingId}}"]
+            }
+          }
+        },
+        {
+          "name": "06 - Obtener estadísticas del restaurante",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/stats/restaurant/{{restauranteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "stats", "restaurant", "{{restauranteId}}"]
+            }
+          }
+        },
+        {
+          "name": "07 - Eliminar calificación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/restaurant/{{ratingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "restaurant", "{{ratingId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery Ratings",
+      "item": [
+        {
+          "name": "01 - Crear calificación repartidor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedido_id\": \"{{pedidoId}}\",\n  \"repartidor_id\": \"{{repartidorId}}\",\n  \"estrellas\": 5,\n  \"comentario\": \"Entrega rápida y cuidadosa, muy profesional\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('ratingDeliveryId', json.id);",
+                  "pm.test('Status 201', () => pm.response.code === 201);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Obtener calificación por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery/{{ratingDeliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery", "{{ratingDeliveryId}}"]
+            }
+          }
+        },
+        {
+          "name": "03 - Listar calificaciones del usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery/user/{{userId}}?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery", "user", "{{userId}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 - Listar calificaciones del repartidor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery/delivery/{{repartidorId}}?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery", "delivery", "{{repartidorId}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 - Actualizar calificación",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estrellas\": 4,\n  \"comentario\": \"Buena entrega, aunque llegó 5 minutos tarde\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery/{{ratingDeliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery", "{{ratingDeliveryId}}"]
+            }
+          }
+        },
+        {
+          "name": "06 - Obtener estadísticas del repartidor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/stats/delivery/{{repartidorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "stats", "delivery", "{{repartidorId}}"]
+            }
+          }
+        },
+        {
+          "name": "07 - Eliminar calificación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/delivery/{{ratingDeliveryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "delivery", "{{ratingDeliveryId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

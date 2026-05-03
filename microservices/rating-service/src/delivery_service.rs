@@ -4,6 +4,7 @@ use crate::errors::Result;
 use crate::models::DeliveryRating;
 use crate::delivery_repository::DeliveryRatingRepository;
 
+#[derive(Clone)]
 pub struct DeliveryRatingService {
     repo: DeliveryRatingRepository,
 }

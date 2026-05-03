@@ -5,14 +5,11 @@ use axum::{
 };
 use serde::Deserialize;
 use uuid::Uuid;
-use utoipa::Path as UtoipaPath;
 use crate::{
     dto::{CreateRatingRequest, UpdateRatingRequest, RatingResponse, ListRatingsResponse, PaginationInfo, StatsInfo, DistributionInfo},
     errors::Result,
     models::DeliveryRating,
-    delivery_service::DeliveryRatingService,
     state::AppState,
-    delivery_repository::DeliveryRatingRepository,
 };
 
 #[derive(Debug, Deserialize)]
@@ -41,10 +38,7 @@ pub async fn create_delivery_rating(
     // Extract user_id from JWT (mock for now)
     let user_id = Uuid::new_v4();
 
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let rating = service
+    let rating = state.delivery_service
         .create(payload.pedido_id, repartidor_id, user_id, payload.estrellas, payload.comentario)
         .await?;
 
@@ -67,10 +61,7 @@ pub async fn get_delivery_rating(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<RatingResponse>> {
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let rating = service.get_by_id(id).await?;
+    let rating = state.delivery_service.get_by_id(id).await?;
 
     Ok(Json(rating_to_response(&rating, None, Some(rating.repartidor_id))))
 }
@@ -96,10 +87,7 @@ pub async fn get_user_delivery_ratings(
     let limit = q.limit.unwrap_or(10);
     let offset = q.offset.unwrap_or(0);
 
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let (ratings, total) = service.get_by_user(user_id, limit, offset).await?;
+    let (ratings, total) = state.delivery_service.get_by_user(user_id, limit, offset).await?;
 
     let data = ratings
         .iter()
@@ -134,11 +122,8 @@ pub async fn get_delivery_ratings(
     let limit = q.limit.unwrap_or(10);
     let offset = q.offset.unwrap_or(0);
 
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let (ratings, total) = service.get_by_delivery(repartidor_id, limit, offset).await?;
-    let (avg_rating, total_count, dist) = service.get_stats(repartidor_id).await?;
+    let (ratings, total) = state.delivery_service.get_by_delivery(repartidor_id, limit, offset).await?;
+    let (avg_rating, total_count, dist) = state.delivery_service.get_stats(repartidor_id).await?;
 
     let data = ratings
         .iter()
@@ -180,10 +165,7 @@ pub async fn update_delivery_rating(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateRatingRequest>,
 ) -> Result<Json<RatingResponse>> {
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let rating = service.update(id, payload.estrellas, payload.comentario).await?;
+    let rating = state.delivery_service.update(id, payload.estrellas, payload.comentario).await?;
 
     Ok(Json(rating_to_response(&rating, None, Some(rating.repartidor_id))))
 }
@@ -204,10 +186,7 @@ pub async fn delete_delivery_rating(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    service.delete(id).await?;
+    state.delivery_service.delete(id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -227,10 +206,7 @@ pub async fn get_delivery_stats(
     State(state): State<AppState>,
     Path(repartidor_id): Path<Uuid>,
 ) -> Result<Json<StatsInfo>> {
-    let repo = DeliveryRatingRepository::new(state.db.clone());
-    let service = DeliveryRatingService::new(repo);
-
-    let (avg_rating, total_count, dist) = service.get_stats(repartidor_id).await?;
+    let (avg_rating, total_count, dist) = state.delivery_service.get_stats(repartidor_id).await?;
 
     Ok(Json(StatsInfo {
         average_rating: avg_rating,

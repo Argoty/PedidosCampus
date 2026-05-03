@@ -56,7 +56,7 @@ export class AppModule implements NestModule {
     );
     applyProxy(
       '/restaurants',
-      process.env.RESTAURANT_SERVICE_URL || 'http://restaurant-service:8001',
+      process.env.RESTAURANT_SERVICE_URL || 'http://restaurant-service:8001/api/v1',
     );
     applyProxy(
       '/orders',

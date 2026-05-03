@@ -10,7 +10,7 @@ class TestRestaurantes:
     async def test_create_restaurante_admin(self, client, admin_token):
         """Test creating a restaurante as admin."""
         response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "El Buen Sabor",
                 "descripcion": "Comida típica",
@@ -31,7 +31,7 @@ class TestRestaurantes:
     ):
         """Test creating restaurante with imagenUrl alias (camelCase)."""
         response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Alias Test",
                 "descripcion": "Alias field mapping",
@@ -48,7 +48,7 @@ class TestRestaurantes:
     async def test_create_restaurante_unauthorized(self, client, user_token):
         """Test that non-admin cannot create restaurante."""
         response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Test",
                 "direccion": "Test",
@@ -63,7 +63,7 @@ class TestRestaurantes:
     ):
         """Test validation of required fields."""
         response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Test",
                 # Missing direccion
@@ -77,7 +77,7 @@ class TestRestaurantes:
         """Test listing restaurantes."""
         # Create a restaurante first
         create_response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Pizza Palace",
                 "descripcion": "Pizzería",
@@ -89,7 +89,7 @@ class TestRestaurantes:
         assert create_response.status_code == 201
 
         # List restaurantes
-        response = await client.get("/api/v1/restaurants")
+        response = await client.get("/restaurants")
         assert response.status_code == 200
         data = response.json()
         assert "items" in data
@@ -100,7 +100,7 @@ class TestRestaurantes:
         """Test filtering restaurantes."""
         # Create restaurantes with different categories
         await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Pizzería Italia",
                 "direccion": "Cra 5 # 10",
@@ -110,7 +110,7 @@ class TestRestaurantes:
         )
 
         await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Burgues Deluxe",
                 "direccion": "Cra 7 # 20",
@@ -120,7 +120,7 @@ class TestRestaurantes:
         )
 
         # Filter by category
-        response = await client.get("/api/v1/restaurants?categoria=Pizzería")
+        response = await client.get("/restaurants?categoria=Pizzería")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) >= 1
@@ -129,7 +129,7 @@ class TestRestaurantes:
         """Test getting restaurante by ID with menu."""
         # Create restaurante
         create_response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Tacos Mexicanos",
                 "direccion": "Cra 15 # 30",
@@ -140,7 +140,7 @@ class TestRestaurantes:
         restaurante_id = create_response.json()["id"]
 
         # Get restaurante
-        response = await client.get(f"/api/v1/restaurants/{restaurante_id}")
+        response = await client.get(f"/restaurants/{restaurante_id}")
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == restaurante_id
@@ -149,14 +149,14 @@ class TestRestaurantes:
 
     async def test_get_restaurante_not_found(self, client):
         """Test getting non-existent restaurante."""
-        response = await client.get(f"/api/v1/restaurants/{uuid4()}")
+        response = await client.get(f"/restaurants/{uuid4()}")
         assert response.status_code == 404
 
     async def test_update_restaurante(self, client, admin_token):
         """Test updating restaurante."""
         # Create
         create_response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Original Name",
                 "direccion": "Cra 1 # 1",
@@ -168,7 +168,7 @@ class TestRestaurantes:
 
         # Update
         update_response = await client.patch(
-            f"/api/v1/restaurants/{restaurante_id}",
+            f"/restaurants/{restaurante_id}",
             json={"nombre": "Updated Name"},
             headers={"Authorization": f"Bearer {admin_token}"},
         )
@@ -180,7 +180,7 @@ class TestRestaurantes:
         """Test activating restaurante."""
         # Create and deactivate
         create_response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Test",
                 "direccion": "Test",
@@ -191,13 +191,13 @@ class TestRestaurantes:
         restaurante_id = create_response.json()["id"]
 
         await client.post(
-            f"/api/v1/restaurants/{restaurante_id}/deactivate",
+            f"/restaurants/{restaurante_id}/deactivate",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
 
         # Activate
         response = await client.post(
-            f"/api/v1/restaurants/{restaurante_id}/activate",
+            f"/restaurants/{restaurante_id}/activate",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert response.status_code == 200
@@ -207,7 +207,7 @@ class TestRestaurantes:
         """Test deactivating restaurante."""
         # Create
         create_response = await client.post(
-            "/api/v1/restaurants",
+            "/restaurants",
             json={
                 "nombre": "Test",
                 "direccion": "Test",
@@ -219,7 +219,7 @@ class TestRestaurantes:
 
         # Deactivate
         response = await client.post(
-            f"/api/v1/restaurants/{restaurante_id}/deactivate",
+            f"/restaurants/{restaurante_id}/deactivate",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert response.status_code == 200

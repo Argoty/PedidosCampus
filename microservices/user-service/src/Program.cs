@@ -1,10 +1,9 @@
 using PedidosCampus.UserService.Data;
 using PedidosCampus.UserService.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,33 +20,6 @@ builder.Services.AddDbContext<UserServiceDbContext>(options =>
 
 // Servicios de negocio
 builder.Services.AddScoped<IProfileService, ProfileService>();
-
-// JWT Authentication (firma + expiracion)
-var accessTokenSecret = builder.Configuration["ACCESS_TOKEN_SECRET"]
-    ?? builder.Configuration["Jwt:AccessTokenSecret"];
-
-if (string.IsNullOrWhiteSpace(accessTokenSecret))
-{
-    throw new InvalidOperationException("Missing JWT access token secret. Configure ACCESS_TOKEN_SECRET or Jwt:AccessTokenSecret.");
-}
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.MapInboundClaims = false;
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(accessTokenSecret)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            RoleClaimType = "role",
-            NameClaimType = "sub"
-        };
-    });
 
 builder.Services.AddAuthorization();
 
@@ -114,6 +86,59 @@ var app = builder.Build();
 // Aplicar CORS
 app.UseCors("AllowGateway");
 
+// Decode JWT claims without signature verification
+app.Use(async (context, next) => {
+    if (context.Request.Method == "OPTIONS")
+    {
+        await next();
+        return;
+    }
+
+    var authHeader = context.Request.Headers["Authorization"].ToString();
+    if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer "))
+    {
+        var token = authHeader.Substring("Bearer ".Length).Trim();
+        var parts = token.Split('.');
+        if (parts.Length == 3)
+        {
+            try
+            {
+                var payload = parts[1]
+                    .Replace('-', '+')
+                    .Replace('_', '/');
+
+                switch (payload.Length % 4)
+                {
+                    case 2: payload += "=="; break;
+                    case 3: payload += "="; break;
+                }
+
+                var jsonBytes = Convert.FromBase64String(payload);
+                var json = Encoding.UTF8.GetString(jsonBytes);
+                var claims = new List<Claim>();
+
+                var doc = System.Text.Json.JsonDocument.Parse(json);
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        claims.Add(new Claim(prop.Name, prop.Value.GetString() ?? string.Empty));
+                    }
+                }
+
+                var identity = new ClaimsIdentity(claims, "Bearer");
+                context.User = new ClaimsPrincipal(identity);
+            }
+            catch
+            {
+                // Ignore invalid token; authorization will fail
+            }
+        }
+    }
+
+    await next();
+});
+
 app.Use(async (context, next) => {
     var expectedToken = builder.Configuration["SERVICE_TOKEN"];
     if (context.Request.Method != "OPTIONS" && (!context.Request.Headers.TryGetValue("x-service-token", out var token) || token != expectedToken)) {
@@ -135,7 +160,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -1,5 +1,6 @@
 from typing import Optional
-from jose import JWTError, jwt
+import json
+import base64
 from passlib.context import CryptContext
 from app.core.config import get_settings
 
@@ -20,9 +21,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """Decode JWT access token."""
+    """Decode JWT access token without signature verification."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        parts = token.split(".")
+        if len(parts) != 3:
+            return None
+
+        payload_segment = parts[1]
+        padded = payload_segment + "=" * (-len(payload_segment) % 4)
+        payload_bytes = base64.urlsafe_b64decode(padded.encode("utf-8"))
+        payload = json.loads(payload_bytes.decode("utf-8"))
         return payload
-    except JWTError:
+    except (ValueError, json.JSONDecodeError):
         return None

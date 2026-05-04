@@ -65,6 +65,10 @@ func (m *TestMockOrderRepository) ListOrdersByDeliverer(ctx context.Context, rep
 	return nil, 0, nil
 }
 
+func (m *TestMockOrderRepository) ListAvailableOrders(ctx context.Context, limit, offset int) ([]model.Pedido, int64, error) {
+	return nil, 0, nil
+}
+
 func (m *TestMockOrderRepository) AcceptOrder(ctx context.Context, orderID, repartidorID uuid.UUID) (*model.Pedido, error) {
 	order, exists := m.orders[orderID]
 	if !exists {

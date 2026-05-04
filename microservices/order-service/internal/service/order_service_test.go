@@ -95,6 +95,16 @@ func (m *MockOrderRepository) ListOrdersByDeliverer(ctx context.Context, reparti
 	return result, int64(len(result)), nil
 }
 
+func (m *MockOrderRepository) ListAvailableOrders(ctx context.Context, limit, offset int) ([]model.Pedido, int64, error) {
+	var result []model.Pedido
+	for _, order := range m.orders {
+		if order.Estado == model.EstadoPendiente && order.RepartidorID == nil {
+			result = append(result, *order)
+		}
+	}
+	return result, int64(len(result)), nil
+}
+
 func (m *MockOrderRepository) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, newEstado model.EstadoPedido, changedBy *uuid.UUID) (*model.Pedido, error) {
 	order, exists := m.orders[orderID]
 	if !exists {
@@ -146,12 +156,23 @@ func (m *MockOrderRepository) GetOrderHistory(ctx context.Context, orderID uuid.
 	return order.Historial, nil
 }
 
+// newTestConfig creates a config for testing
+func newTestConfig(restServiceURL string) *config.Config {
+	return &config.Config{
+		RestService: config.ServiceConfig{
+			URL:     restServiceURL,
+			Timeout: 5 * time.Second,
+		},
+		ServiceToken: "test-service-token",
+	}
+}
+
 // Unit Tests
 
 func TestCreateOrder_Success(t *testing.T) {
 	// Set up a mock HTTP server for the restaurant service
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			// Decode the request
 			var req struct {
 				Items []struct {
@@ -204,12 +225,7 @@ func TestCreateOrder_Success(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a config that points to our test server
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -246,12 +262,7 @@ func TestCreateOrder_ValidationError_EmptyItems(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing (URL doesn't matter for this test)
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://unused",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://unused")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -272,7 +283,7 @@ func TestCreateOrder_ValidationError_EmptyItems(t *testing.T) {
 
 func TestCreateOrder_ValidationError_PriceMismatch(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{
@@ -295,12 +306,7 @@ func TestCreateOrder_ValidationError_PriceMismatch(t *testing.T) {
 
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -331,7 +337,7 @@ func TestCreateOrder_ValidationError_PriceMismatch(t *testing.T) {
 
 func TestCreateOrder_ValidationError_ProductUnavailable(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{
@@ -353,12 +359,7 @@ func TestCreateOrder_ValidationError_ProductUnavailable(t *testing.T) {
 
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -389,7 +390,7 @@ func TestCreateOrder_ValidationError_ProductUnavailable(t *testing.T) {
 
 func TestCreateOrder_ValidationError_ProductNotFound(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{
@@ -409,12 +410,7 @@ func TestCreateOrder_ValidationError_ProductNotFound(t *testing.T) {
 
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -445,7 +441,7 @@ func TestCreateOrder_ValidationError_ProductNotFound(t *testing.T) {
 
 func TestCreateOrder_RestaurantService_HTTP500(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"error":"internal server error"}`))
 			return
@@ -456,12 +452,7 @@ func TestCreateOrder_RestaurantService_HTTP500(t *testing.T) {
 
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -492,7 +483,7 @@ func TestCreateOrder_RestaurantService_HTTP500(t *testing.T) {
 
 func TestCreateOrder_RestaurantService_Timeout(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			time.Sleep(2 * time.Second)
 			w.WriteHeader(http.StatusOK)
 			return
@@ -539,7 +530,7 @@ func TestCreateOrder_RestaurantService_Timeout(t *testing.T) {
 
 func TestCreateOrder_ValidationError_MultipleItems_OneFails(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{
@@ -566,12 +557,7 @@ func TestCreateOrder_ValidationError_MultipleItems_OneFails(t *testing.T) {
 
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     ts.URL,
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig(ts.URL)
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userID := uuid.New()
@@ -614,12 +600,7 @@ func TestAcceptOrder_Success(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	// Create an order first
@@ -650,12 +631,7 @@ func TestAcceptOrder_Error_NotPending(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	orderID := uuid.New()
@@ -683,12 +659,7 @@ func TestUpdateOrderStatus_InvalidTransition(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	orderID := uuid.New()
@@ -718,12 +689,7 @@ func TestCancelOrder_Success(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	orderID := uuid.New()
@@ -749,12 +715,7 @@ func TestCancelOrder_Error_NotPending(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	orderID := uuid.New()
@@ -778,12 +739,7 @@ func TestListActiveOrders_ForbiddenForNonAdmin(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	ctx := context.Background()
@@ -797,12 +753,7 @@ func TestListDelivererOrders_ForbiddenForOtherDeliverer(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	actorID := uuid.New()
@@ -821,12 +772,7 @@ func TestGetOrderHistory_ForbiddenForUnrelatedUser(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	orderID := uuid.New()
@@ -850,12 +796,7 @@ func TestListOrders_AdminCanListAllWithFilters(t *testing.T) {
 	repo := NewMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
 	// Create a mock config for testing
-	cfg := &config.Config{
-		RestService: config.ServiceConfig{
-			URL:     "http://localhost:3002",
-			Timeout: 5 * time.Second,
-		},
-	}
+	cfg := newTestConfig("http://localhost:3002")
 	svc := NewOrderService(repo, publisher, 2.0, cfg)
 
 	userA := uuid.New()
@@ -885,7 +826,7 @@ func TestCreateOrder_NotificationSent_Success(t *testing.T) {
 
 	// Mock restaurant service
 	restTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{"productoId": "test", "ok": true, "servidorPrecio": 12.50, "nombre": "Test", "disponible": true},
@@ -974,7 +915,7 @@ func TestCreateOrder_NotificationFails_OrderStillSucceeds(t *testing.T) {
 
 	// Mock restaurant service
 	restTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{"productoId": "test", "ok": true, "servidorPrecio": 12.50, "nombre": "Test", "disponible": true},
@@ -1048,7 +989,7 @@ func TestCreateOrder_NotificationFails_OrderStillSucceeds(t *testing.T) {
 func TestCreateOrder_NotificationTimeout_OrderStillSucceeds(t *testing.T) {
 	// Mock restaurant service
 	restTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{"productoId": "test", "ok": true, "servidorPrecio": 12.50, "nombre": "Test", "disponible": true},
@@ -1110,7 +1051,7 @@ func TestCreateOrder_NotificationTimeout_OrderStillSucceeds(t *testing.T) {
 func TestCreateOrder_NotificationEmptyURL_SkipsCall(t *testing.T) {
 	// Mock restaurant service
 	restTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/products/validate-batch" {
+		if r.Method == http.MethodPost && r.URL.Path == "/restaurants/products/validate-batch" {
 			resp := map[string]interface{}{
 				"items": []map[string]interface{}{
 					{"productoId": "test", "ok": true, "servidorPrecio": 12.50, "nombre": "Test", "disponible": true},

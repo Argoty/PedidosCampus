@@ -2,19 +2,25 @@
 
 Contrato API para el microservicio Restaurantes. Cubre CRUD de restaurantes y productos, filtros y respuestas para consumo por frontend y otros microservicios.
 
-Autenticación
-- Endpoints de creación/edición/eliminación requieren JWT con rol `admin` o rol propio del restaurante (si se modela). Listados públicos pueden ser anónimos.
+## Autenticación
+- Todos los endpoints (excepto `OPTIONS`) requieren el header `x-service-token` validado por middleware global (`app/main.py`). Si no coincide, retorna `403 Forbidden`.
+- Los endpoints de creación/edición/eliminación requieren además un JWT con rol `admin` (evaluado mediante dependencia `require_admin_role`).
 
-Modelos (resumen)
-- Restaurante: id, nombre, descripcion, direccion, categoria, imagenUrl, isActive, createdAt, updatedAt
-- Producto: id, restauranteId, nombre, descripcion, precio, disponible, createdAt, updatedAt
+## Modelos (resumen)
+- **Restaurante**: id, nombre, descripcion, direccion, categoria, imagenUrl, isActive, createdAt, updatedAt
+- **Producto**: id, restauranteId, nombre, descripcion, precio, disponible, createdAt, updatedAt
 
-Endpoints HTTP
+---
 
-1) Crear restaurante
-- POST /restaurants
-- Roles: admin
-- Body:
+## Endpoints HTTP
+
+> Nota: Las rutas base están definidas por el router local. En la aplicación actual, todos los endpoints de `restaurantes` y `productos` caen bajo el prefijo `/restaurants`.
+
+### 1) Crear restaurante
+- `POST /restaurants`
+- **Roles**: admin (`require_admin_role`)
+- **Body**: `RestauranteCreate`
+  ```json
   {
     "nombre": "string",
     "descripcion": "string?",
@@ -22,66 +28,79 @@ Endpoints HTTP
     "categoria": "string",
     "imagenUrl": "string?"
   }
-- Validaciones: nombre y direccion requeridos
-- Respuesta: 201 Created con recurso
+  ```
+- **Respuesta**: `201 Created` (Devuelve el recurso creado)
 
-2) Listar restaurantes
-- GET /restaurants?categoria=&isActive=&q=&limit=&offset=
-- Público
-- Filtros:
-  - categoria: exact match
-  - q: búsqueda por nombre/descripcion (simple ILIKE)
-  - isActive: true/false
-- Respuesta: paginada, cada ítem con resumen (id, nombre, categoria, imagenUrl, isActive)
+### 2) Listar restaurantes
+- `GET /restaurants`
+- **Roles**: Público (pero requiere `x-service-token`)
+- **Filtros (Query params)**:
+  - `categoria` (string, opcional)
+  - `is_active` (bool, default=true)
+  - `q` (string, opcional): Búsqueda por nombre o descripción
+  - `limit` (int, default=50, max=100)
+  - `offset` (int, default=0)
+- **Respuesta**: Diccionario paginado `{"items": [...], "total": int, "limit": int, "offset": int}`
 
-3) Obtener restaurante por id (incluye menú)
-- GET /restaurants/{restaurantId}
-- Respuesta: objeto Restaurante + productos (solo disponibles o todos según query param includeUnavailable=false)
+### 3) Obtener restaurante por id (incluye menú)
+- `GET /restaurants/{restaurante_id}`
+- **Filtros (Query params)**:
+  - `include_unavailable` (bool, default=false): Si es false, sólo incluye productos disponibles.
+- **Respuesta**: Objeto Restaurante detallado + array de productos.
 
-4) Actualizar restaurante
-- PATCH /restaurants/{restaurantId}
-- Roles: admin
-- Body: campos parciales permitidos
-- Respuesta: 200 con recurso actualizado
+### 4) Actualizar restaurante
+- `PATCH /restaurants/{restaurante_id}`
+- **Roles**: admin (`require_admin_role`)
+- **Body**: `RestauranteUpdate` (campos parciales)
+- **Respuesta**: `200 OK` con recurso actualizado
 
-5) Activar / Desactivar restaurante
-- POST /restaurants/{restaurantId}/activate
-- POST /restaurants/{restaurantId}/deactivate
-- Roles: admin
-- Efecto: set isActive true/false
-
-6) CRUD Productos
-- Crear producto: POST /restaurants/{restaurantId}/products
-  - Body: { nombre, descripcion?, precio, disponible? }
-  - Roles: admin
-  - Validar precio >= 0
-- Listar productos: GET /restaurants/{restaurantId}/products?disponible=
-- Obtener producto: GET /products/{productId}
-- Actualizar producto: PATCH /products/{productId}
-- Eliminar producto: DELETE /products/{productId} (soft delete recomendado: poner disponible=false)
-
-Integración con order-service
-- order-service debe poder consultar productos por id para validar precio y nombre al crear un pedido. Proveer endpoint:
-  - POST /products/validate-batch
-  - Body: [ { productId, precioUnit } ]
-  - Respuesta: lista con { productId, ok: bool, serverPrecio, nombre, disponible }
-- Este endpoint permite validar atomically los items del pedido y devolver discrepancias.
-
-Eventos RabbitMQ
-- restaurant.created, restaurant.updated, product.created, product.updated, product.deleted
-- Payloads resumidos para que otros servicios (p.ej. search, gateway) indexen
-
-Buenas prácticas
-- Control de consistencia: cuando se actualiza precio, publicar evento product.updated para que order-service pueda invalidar caches
-- Soft deletes para productos (no borrar físicamente)
-- Limitar ancho de respuesta: listar productos con paginación y campos resumidos
-
-Errores y códigos HTTP
-- Estándares: 200,201,400,401,403,404,409,500
-
-Consideraciones de diseño
-- Indizar por categoria e isActive (ya en schema)
-- Validación server-side de precios y tipos
-- Documentar límites: max productos por restaurante, longitud de strings
+### 5) Activar / Desactivar restaurante
+- `POST /restaurants/{restaurante_id}/activate`
+- `POST /restaurants/{restaurante_id}/deactivate`
+- **Roles**: admin (`require_admin_role`)
+- **Respuesta**: `200 OK` con recurso modificado (`isActive` a `True` o `False` correspondientemente)
 
 ---
+
+### 6) CRUD Productos
+
+> ¡Importante!: Por la configuración actual del enrutador (`api_router.include_router(products.router, prefix="/restaurants")`), todas las rutas de productos inician con `/restaurants`.
+
+- **Crear producto**: `POST /restaurants/{restaurante_id}/products`
+  - **Roles**: admin (`require_admin_role`)
+  - **Body**: `ProductoCreate`
+- **Listar productos de un restaurante**: `GET /restaurants/{restaurante_id}/products`
+  - **Filtros (Query params)**: `disponible` (bool, opcional), `limit` (default=100), `offset` (default=0)
+- **Obtener producto**: `GET /restaurants/products/{producto_id}`
+- **Actualizar producto**: `PATCH /restaurants/products/{producto_id}`
+  - **Roles**: admin (`require_admin_role`)
+- **Eliminar producto (soft-delete)**: `DELETE /restaurants/products/{producto_id}`
+  - **Roles**: admin (`require_admin_role`)
+  - **Efecto**: `204 No Content` (internamente pasa `disponible=False`).
+
+---
+
+### 7) Integración con order-service (Validación Batch)
+- `POST /restaurants/products/validate-batch`
+- **Body**: `ProductoValidacionRequest`
+  ```json
+  {
+    "items": [
+      { "producto_id": "uuid", "precio_unitario": 10.5 }
+    ]
+  }
+  ```
+- **Respuesta**: `ProductoValidacionResponse`
+  - Este endpoint permite validar atómicamente los items del pedido y devolver discrepancias (nombre, precio, disponibilidad y estado global `ok`).
+
+### 8) Health Check
+- `GET /health`
+- **Respuesta**: `{"status": "healthy", "service": "restaurant-service", "version": "1.0.0"}`
+
+---
+
+## Consideraciones de Diseño y Gotchas Documentados
+- **Prefijos**: El código en `app/api/v1/router.py` agrupa *todo* bajo `/restaurants`. Por lo que los endpoints independientes de productos quedan como `/restaurants/products/{id}`.
+- **Autorización por Token de Servicio**: `app/main.py` define un middleware que requiere el header `x-service-token` en toda request que no sea `OPTIONS`.
+- **Soft Deletes**: `DELETE` sobre productos no elimina físicamente la fila, la marca como no disponible.
+- **Activos por defecto**: `GET /restaurants` filtra `is_active=True` por defecto. Si quieres ver todos, hay que pasar explícitamente `is_active=false` o sin filtrar según implementación.

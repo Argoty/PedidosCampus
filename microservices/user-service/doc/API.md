@@ -38,24 +38,24 @@ Schemas (resumen para OpenAPI)
 Endpoints HTTP
 
 1) Obtener perfil propio
-- GET /profiles/me
+- GET /api/profiles/me
 - Roles: usuario, repartidor
 - Respuesta: perfil asociado al userId del JWT
 
 2) Crear/Registrar perfil
-- POST /profiles
+- POST /api/profiles
 - Roles: autenticado (para completar perfil después de registrar en Auth)
 - Body: CreateProfileRequest
 - Server genera userId vinculándolo con JWT subject
 - Respuesta: 201 Created
 
 3) Actualizar perfil
-- PATCH /profiles/me
+- PATCH /api/profiles/me
 - Body: UpdateProfileRequest
 - Respuesta: 200 con perfil actualizado
 
 4) Cambiar disponibilidad (repartidor)
-- POST /profiles/me/availability
+- POST /api/profiles/me/availability
 - Body: AvailabilityRequest
 - Roles: repartidor
 - Efecto:
@@ -64,53 +64,53 @@ Endpoints HTTP
 - Respuesta: 200
 
 5) Listar repartidores disponibles
-- GET /profiles/delivery?limit=&offset=&near=&radius=&onlyAvailable=true
+- GET /api/profiles/delivery?limit=&offset=&onlyAvailable=true
 - Roles: internal (ACCESIBLE SOLO A TRAVÉS DEL GATEWAY). No exponer directamente al frontend hasta que el Gateway aplique controles.
-- Filtros: onlyAvailable=true, near=lat,lon, radius (metros), limit, offset
+- Filtros: onlyAvailable=true, limit, offset
 - Respuesta: PaginatedResponse[UserProfile] con perfiles de tipo repartidor y disponible=true
 
 6) Admin: listar/activar/desactivar usuarios
-- GET /profiles?tipo=&isActive=&limit=&offset=
-- POST /profiles/{profileId}/deactivate
-- POST /profiles/{profileId}/activate
+- GET /api/profiles?tipo=&isActive=&limit=&offset=
+- POST /api/profiles/{profileId}/deactivate
+- POST /api/profiles/{profileId}/activate
 - Roles: admin
 
 7) Obtener perfil por id
-- GET /profiles/{profileId}
+- GET /api/profiles/{profileId}
 - Roles: admin OR owner (si el JWT subject coincide con userId) — ADMIN or internal via Gateway
 - Respuesta: 200 con UserProfile (campos públicos) o 404
 
 8) Eliminar / Borrar perfil (admin)
-- DELETE /profiles/{profileId}
+- DELETE /api/profiles/{profileId}
 - Roles: admin
 - Efecto: eliminar físicamente o marcar isActive=false (decidir implementacion). Respuesta: 204
 
 9) Admin: actualizar perfil parcial
-- PATCH /profiles/{profileId}
+- PATCH /api/profiles/{profileId}
 - Roles: admin
 - Body: campos parciales
 - Respuesta: 200
 
 10) Búsqueda avanzada (internal)
-- GET /profiles/search?tipo=&disponible=&near=&radius=&limit=&offset=
+- GET /api/profiles/search?tipo=&disponible=&limit=&offset=
 - Roles: internal
 - Respuesta: PaginatedResponse[UserProfile]
 
 11) Reserva atómica (internal) — para evitar race conditions al asignar repartidores
-- POST /profiles/{profileId}/reserve
+- POST /api/profiles/{profileId}/reserve
 - Roles: internal (API Gateway / order-service)
 - Body: ReserveRequest { ttlSeconds?: number }
 - Comportamiento: intenta marcar reservedUntil = now + ttlSeconds ATÓMICAMENTE, solo si disponible=true y (reservedUntil IS NULL OR reservedUntil <= now)
 - Respuestas: 200 OK con { reservedUntil } si éxito, 409 Conflict si ya reservado/indisponible
 
 12) Liberar reserva (internal)
-- POST /profiles/{profileId}/release
+- POST /api/profiles/{profileId}/release
 - Roles: internal
 - Efecto: clear reservedUntil si el caller es el que reservó o si es admin
 - Respuesta: 200
 
 13) Obtener disponibilidad (opcional)
-- GET /profiles/me/availability
+- GET /api/profiles/me/availability
 - Roles: repartidor
 - Respuesta: { disponible, reservedUntil }
 

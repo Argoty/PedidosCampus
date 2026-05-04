@@ -73,6 +73,7 @@ export class AppModule implements NestModule {
       process.env.NOTIFICACIONES_SERVICE_URL ||
         'http://notificaciones-worker.local',
     );
-    applyProxy('/ratings', process.env.CALIFICACIONES_SERVICE_URL || '');
+    // Ratings: use applyProxy but ensure the service-token header is added
+    applyProxy('/ratings', process.env.CALIFICACIONES_SERVICE_URL || 'http://rating-service:8003');
   }
 }

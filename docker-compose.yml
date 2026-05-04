@@ -132,6 +132,7 @@ services:
       DATABASE_LOG_LEVEL: info
       SERVICE_TOKEN: ${SERVICE_TOKEN}
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
+      RESTAURANT_SERVICE_URL: http://restaurant-service:8001
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_EXCHANGE: orders

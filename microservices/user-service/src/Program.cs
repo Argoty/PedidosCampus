@@ -1,5 +1,6 @@
 using PedidosCampus.UserService.Data;
 using PedidosCampus.UserService.Services;
+using PedidosCampus.UserService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -21,7 +22,17 @@ builder.Services.AddDbContext<UserServiceDbContext>(options =>
 // Servicios de negocio
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
-builder.Services.AddAuthorization();
+// AddAuthentication is required for [Authorize] to work
+// The JWT validation is done manually in the middleware below (lines 97-147)
+// which decodes JWT and sets context.User with claims including "role"
+// We use a custom authentication scheme that trusts the manual middleware
+builder.Services.AddAuthentication("ManualJwt")
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ManualJwtAuthHandler>("ManualJwt", null);
+
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = null;
+});
 
 // Controllers y OpenAPI
 builder.Services.AddControllers();
@@ -108,7 +119,16 @@ app.Use(async (context, next) => {
                 {
                     if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
-                        claims.Add(new Claim(prop.Name, prop.Value.GetString() ?? string.Empty));
+                        var value = prop.Value.GetString() ?? string.Empty;
+                        // Use ClaimTypes.Role for proper role-based authorization
+                        if (prop.Name == "role")
+                        {
+                            claims.Add(new Claim(ClaimTypes.Role, value));
+                        }
+                        else
+                        {
+                            claims.Add(new Claim(prop.Name, value));
+                        }
                     }
                 }
 
@@ -146,6 +166,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication(); // Required for [Authorize] - registers the authentication scheme
 app.UseAuthorization();
 app.MapControllers();
 

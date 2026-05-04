@@ -1,269 +1,104 @@
 # AGENTS.md — User Service
 
-## Executive Summary
+## Stack
+ASP.NET 8 + EF Core 8 + PostgreSQL 16 + xUnit + Swagger/OpenAPI.
 
-**Stack:** ASP.NET 8 + EF Core 8 + PostgreSQL 16 + xUnit + Swagger/OpenAPI.
+## Entrypoint
+`src/Program.cs` → DI, migraciones, controllers.
 
-**Entrypoint:** `src/Program.cs` → Dependency injection setup + migrations + controllers.
+## Archivos Principales
+- `src/Controllers/ProfilesController.cs` — 15 endpoints HTTP
+- `src/Services/ProfileService.cs` — Lógica de negocio
+- `src/Data/UserServiceDbContext.cs` — EF Core DbContext
+- `src/Models/UserProfile.cs` — Entidad de dominio
+- `src/DTOs/ProfileDTOs.cs` — DTOs request/response
+- `Tests/ProfileServiceTests.cs` — Tests unitarios xUnit
 
-**Main artifacts:** `src/Controllers/ProfilesController.cs` (endpoints), `src/Services/ProfileService.cs` (business logic), `src/Data/UserServiceDbContext.cs` (EF Core), `src/Models/UserProfile.cs` (domain model).
+## Comandos Verificados
 
-**Database:** PostgreSQL. EF Core Migrations stored in `src/Migrations/`.
-
----
-
-## Verified Commands (Do Not Guess)
-
-### Local Development (without Docker)
-
+### Local
 ```bash
 cd microservices/user-service
-
-# Restore NuGet packages
 dotnet restore
-
-# Run with watch (live reload)
-dotnet watch run
-
-# Run normally
-dotnet run
-
-# Run tests (xUnit, uses InMemoryDatabase)
-dotnet test
-
-# Apply pending migrations manually
+dotnet watch run   # Live reload
+dotnet run         # Normal
+dotnet test       # Tests (InMemoryDatabase)
 dotnet ef database update
-
-# Create a new migration after model changes
-dotnet ef migrations add MigrationName
+dotnet ef migrations add Nombre
 ```
 
-**Default local ports:** 5000 (API), 5432 (PostgreSQL host).
-
-### Docker (from repo root)
-
+### Docker
 ```bash
 docker compose --env-file .env.docker up --build
-
-# Logs for just this service
 docker compose --env-file .env.docker logs -f user-service
 ```
 
-**Docker ports:** 5000 (API host), 5434 (PostgreSQL host).
+**Puertos locales:** 5000 (API), 5432 (PostgreSQL).  
+**Puertos Docker:** 5000 (API), 5434 (PostgreSQL).
 
----
+## Arquitectura Capas
+- Controller → HTTP routing, JWT extraction (`User.FindFirst("sub")`)
+- Service → Lógica de negocio, persistencia
+- Data → EF Core DbContext, queries
+- Models → Entidad de dominio (UserId no exponer en responses)
+- DTOs → Contratos request/response
 
-## Architecture & Boundaries
-
-### Layers (Clean Architecture)
-
-- **Controller:** `src/Controllers/ProfilesController.cs` → HTTP routing, request validation, JWT extraction (`User.FindFirst("sub")`).
-- **Service:** `src/Services/ProfileService.cs` → All business logic, persistence coordination. **No HTTP concerns here.**
-- **Data:** `src/Data/UserServiceDbContext.cs` → EF Core DbContext, migrations, queries.
-- **Models:** `src/Models/UserProfile.cs` → Domain entity. Never expose `UserId` in HTTP responses.
-- **DTOs:** `src/DTOs/ProfileDTOs.cs` → Request/response contracts.
-
-### Key Behaviors
-
-1. **JWT extraction:** Endpoints extract `userId` from JWT claim `"sub"`. Code: `User.FindFirst("sub")?.Value`.
-2. **One profile per user:** `ProfileService.CreateProfileAsync()` throws `InvalidOperationException` if profile exists. Prevents duplicates.
-3. **Profile types:** Only two valid types: `"usuario"` or `"repartidor"`. Validation in `ProfileService.cs:53–54`.
-4. **Soft delete:** Profiles have `IsActive` flag. Queries filter by `IsActive == true`.
-5. **Atomic reserves (delivery):** `ReservedUntil` timestamp prevents race conditions. Query with `ReservedUntil > UtcNow`.
-6. **Internal endpoints:** `/api/profiles/delivery`, `/reserve`, `/release` expect `X-Client: gateway` header to simulate API Gateway access.
-
----
+## Comportamientos Clave
+1. JWT extrae userId desde claim "sub"
+2. Un perfil por usuario (InvalidOperationException si existe)
+3. Tipos válidos: "usuario", "repartidor"
+4. Soft delete: flag IsActive
+5. Reserva atómica: ReservedUntil para evitar race conditions
+6. Endpoints internos requieren header X-Client: gateway
 
 ## Database
 
-### Connection String Fallback Chain
+### Connection String
+Priordad: appsettings.json → env var USUARIOS_DATABASE_URL → hardcoded default.
 
-**Program.cs:10–12** applies this priority:
-
-1. `appsettings.json` → `ConnectionStrings.DefaultConnection`
-2. Environment variable `USUARIOS_DATABASE_URL`
-3. Hardcoded default: `Host=localhost;Port=5432;Database=user_db;Username=user_user;Password=user_password`
-
-### Development vs. Production
-
-| Config | Location | Logging | DB Credentials |
-|--------|----------|---------|-----------------|
-| **Development** | `appsettings.Development.json` | DEBUG | `postgres`/`postgres` |
-| **Production** | `appsettings.json` + Dockerfile | Information | From env vars |
-
-**Auto-migration on startup:**
-- **Development only** (Program.cs:73–80): `dbContext.Database.Migrate()` runs at app start.
-- **Production**: Migrations must be applied manually or via startup script.
-
-### Migrations
-
-- Stored in `src/Migrations/` (auto-generated by EF Core).
-- Designer file (`*.Designer.cs`) + implementation file — **do not hand-edit**.
-- To add: `dotnet ef migrations add SomeName` → creates both files automatically.
-
----
+### Migraciones
+Almacenadas en `src/Migrations/`. Auto-generadas por EF Core.
+Desarrollo: auto-aplica en startup. Producción: aplicar manualmente.
 
 ## Testing
-
-### Unit Tests (xUnit)
-
-**Location:** `Tests/ProfileServiceTests.cs`
-
-**Key facts:**
-- Uses `DbContextOptionsBuilder<UserServiceDbContext>().UseInMemoryDatabase()` — **no PostgreSQL required**.
-- Each test gets a fresh random-named in-memory DB via `Guid.NewGuid().ToString()`.
-- Implements `IAsyncLifetime`: `InitializeAsync()` sets up context, `DisposeAsync()` cleans up.
-- Mocks `ILogger<ProfileService>` to avoid console spam.
-
-**Run tests:**
-
+Usa InMemoryDatabase. Cada test obtiene DB única vía Guid.
 ```bash
 dotnet test
 ```
 
-**Coverage:** (optional, not currently enabled)
-```bash
-dotnet test /p:CollectCoverage=true /p:CoverageFormat=lcov
-```
+## Gotchas
+1. JWT malformado → "No subject claim in token"
+2. Perfil ya existe → InvalidOperationException
+3. Migraciones no aplicadas → startup falla
+4. appsettings.Development.json solo carga con ASPNETCORE_ENVIRONMENT=Development
+5. InMemoryDatabase ≠ PostgreSQL real
+6. UserId nunca exponer en responses DTO
+
+## Convenciones
+- Rutas: /api/profiles/*
+- Métodos async: sufijo *Async, retorno Task<T>
+- Errores: Controller captura, retorna HTTP status + ErrorResponse
+- Logging: Structured con placeholders {Property}
+
+## Scope Actual
+
+### Implementado
+- ✅ CRUD perfiles (usuario, repartidor)
+- ✅ Disponibilidad repartidor
+- ✅ Reserva atómica (ReservedUntil)
+- ✅ Soft delete (IsActive)
+- ✅ JWT extraction
+- ✅ Swagger /swagger
+
+### Pendiente
+- ❌ RabbitMQ eventos
+- ❌ API Gateway real
+- ❌ Role-based authorization (solo decoradores)
+- ❌ Multi-tenant
+
+## Errores HTTP
+200, 201, 204, 400, 401, 403, 404, 409, 500
 
 ---
 
-## Configuration & Environment
-
-### appsettings.json Precedence
-
-1. `appsettings.json` (base defaults for all environments)
-2. `appsettings.{Environment}.json` (dev/prod overrides)
-3. Environment variables (highest priority, can override both files)
-
-**Current files:**
-- `src/appsettings.json` — base (production-like defaults)
-- `src/appsettings.Development.json` — local overrides (DEBUG logging, dev DB creds)
-- No `appsettings.example.json` committed (docs state examples exist, verify if needed)
-
-### Environment Variable
-
-```bash
-export ASPNETCORE_ENVIRONMENT=Development
-export USUARIOS_DATABASE_URL="Host=localhost;Port=5432;Database=user_db;Username=user_user;Password=user_password"
-```
-
----
-
-## Gotchas That Waste Time
-
-1. **JWT not extracted:** `User.FindFirst("sub")` returns `null` if JWT is missing or malformed. Code catches with `?? throw UnauthorizedAccessException`. If tests fail with "No subject claim in token" → verify test setup includes JWT with `"sub"` claim.
-
-2. **Profile already exists:** `CreateProfileAsync()` throws `InvalidOperationException` if a profile for that `userId` exists (even soft-deleted via `IsActive`). Query checks **all** profiles (`FirstOrDefaultAsync(p => p.UserId == userId)`), not just active ones. Fix: If re-creating, manually delete from DB or use a different `userId` in tests.
-
-3. **Migrations not applied:** If code changes model but migrations not created/applied, startup hangs or crashes. Always: `dotnet ef migrations add Name` → `dotnet ef database update`.
-
-4. **appsettings.Development.json not loaded:** Only loaded if `ASPNETCORE_ENVIRONMENT=Development`. If running tests in a CI/CD that sets `ASPNETCORE_ENVIRONMENT=Production`, it uses `appsettings.json` defaults. In Docker, `Dockerfile` sets `ASPNETCORE_ENVIRONMENT=Production` explicitly (line 34).
-
-5. **InMemoryDatabase is not real SQL:** Tests pass locally but fail with PostgreSQL due to timing, locking, or concurrency assumptions. Always test with real PostgreSQL before merging if the code touches atomic operations or transactions.
-
-6. **UserId leaked in response:** Domain model has `UserId` field. **Never** return it in HTTP responses (DTOs should only expose `Id` from profile). Check `MapToResponse()` method — it must **exclude** `UserId`.
-
----
-
-## Conventions & Style
-
-### Naming
-
-- **Endpoints:** `/api/profiles/*` (route prefix in controller).
-- **Classes:** PascalCase. Interfaces prefixed `I`.
-- **Methods:** Async methods suffixed `*Async`, return `Task` or `Task<T>`.
-- **Fields:** Private `_field` (underscore prefix).
-
-### Error Handling
-
-- **Controller:** Catches exceptions from service, returns appropriate HTTP status + `ErrorResponse` DTO.
-- **Service:** Throws domain exceptions (`InvalidOperationException`, `ArgumentException`). Controller translates to HTTP.
-
-### Logging
-
-- **Controller:** Logs HTTP request entry points (GET, POST, etc.).
-- **Service:** Logs business logic events and warnings.
-- **Format:** Structured logging with named placeholders, e.g., `_logger.LogInformation("Creating profile for userId: {UserId}", userId)`.
-
----
-
-## File Ownership & Entrypoints
-
-| Path | Purpose | Touches |
-|------|---------|--------|
-| `src/Program.cs` | Startup, DI, middleware, migrations | Service registration, CORS, Swagger |
-| `src/Controllers/ProfilesController.cs` | HTTP routes, JWT extraction | Delegates to `IProfileService` |
-| `src/Services/ProfileService.cs` | **All business logic** | `UserServiceDbContext` queries, logging |
-| `src/Data/UserServiceDbContext.cs` | EF Core DbContext, model config | `UserProfile` entity config, migrations |
-| `src/Models/UserProfile.cs` | Domain entity | Domain rules (no HTTP here) |
-| `src/DTOs/ProfileDTOs.cs` | Request/response shapes | Serialization contracts only |
-| `Tests/ProfileServiceTests.cs` | xUnit unit tests | Mocks, in-memory DB, assertions |
-
----
-
-## Scope & Assumptions
-
-### Within Scope (Verified in Code)
-
-- ✅ CRUD for user profiles (usuario, repartidor types).
-- ✅ Availability toggling for delivery (`Disponible` flag).
-- ✅ Atomic reserves (delivery reservation with `ReservedUntil`).
-- ✅ Soft delete (IsActive flag).
-- ✅ JWT extraction from claims.
-- ✅ Swagger docs at `/swagger`.
-
-### Out of Scope (Not Yet Implemented)
-
-- ❌ JWT validation/verification (auth-service handles issuance; user-service only extracts claims).
-- ❌ RabbitMQ events (planned, not in code).
-- ❌ API Gateway integration (only header check `X-Client: gateway` for simulation).
-- ❌ Role-based authorization (mentioned in comments, not enforced).
-- ❌ Multi-tenant support.
-
----
-
-## References
-
-- **API Spec:** `doc/API.md` — 15 endpoints, request/response examples.
-- **Validation & Implementation Notes:** `doc/VALIDATION_SUMMARY.md`, `doc/IMPLEMENTATION_SUMMARY.md`.
-- **Root README:** `/PedidosCampus/README.md` — monorepo structure, Docker commands.
-- **Root AGENTS.md:** `/PedidosCampus/AGENTS.md` — shared gotchas (database passwords, port mapping, docker-compose).
-
----
-
-## Quick Reference: Common Tasks
-
-### Add a New Endpoint
-
-1. Add method to `IProfileService` interface.
-2. Implement in `ProfileService.cs`.
-3. Add controller method in `ProfilesController.cs` with route, HTTP verb, logging.
-4. Add DTOs to `ProfileDTOs.cs` if needed.
-5. Run `dotnet test` to ensure no regression.
-6. Update `doc/API.md` if it's a public endpoint.
-
-### Change the Database Schema
-
-1. Edit `UserProfile.cs` (domain model).
-2. Run `dotnet ef migrations add MigrationDescription`.
-3. Verify `src/Migrations/` has new files (`.cs` and `.Designer.cs`).
-4. Run `dotnet ef database update` (local) or Docker will auto-apply on startup (Development only).
-5. Update tests if they rely on schema assumptions.
-
-### Fix a Failing Test
-
-1. Check if test uses correct userId format (must be `Guid`).
-2. Verify InMemoryDatabase is fresh (each test gets unique database name).
-3. If test modifies DB, ensure `DisposeAsync()` cleans up (inherited from `IAsyncLifetime`).
-4. Run with `dotnet test -v normal` for detailed output.
-
-### Deploy to Production (Docker)
-
-1. Update `docker-compose.yml` (root) with correct `USER_DB_PASSWORD` env var.
-2. Docker auto-runs migrations from `Program.cs` startup (if `IsDevelopment()` = false, manual required).
-3. Ensure `ASPNETCORE_ENVIRONMENT=Production` in Dockerfile (line 34).
-
----
-
-**Last updated:** April 16, 2026. Verified against `Program.cs`, `ProfileService.cs`, `ProfilesController.cs`, `UserService.csproj`, tests.
+**Última actualización:** Mayo 2026

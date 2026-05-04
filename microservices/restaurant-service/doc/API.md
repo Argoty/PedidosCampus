@@ -3,104 +3,210 @@
 Contrato API para el microservicio Restaurantes. Cubre CRUD de restaurantes y productos, filtros y respuestas para consumo por frontend y otros microservicios.
 
 ## Autenticación
-- Todos los endpoints (excepto `OPTIONS`) requieren el header `x-service-token` validado por middleware global (`app/main.py`). Si no coincide, retorna `403 Forbidden`.
-- Los endpoints de creación/edición/eliminación requieren además un JWT con rol `admin` (evaluado mediante dependencia `require_admin_role`).
+- Todos los endpoint (excepto `OPTIONS`) requieren header `x-service-token`.validado por middleware global en `app/main.py`. Si no coincide, retorna `403 Forbidden`.
+- Endpoints de escritura requieren JWT con rol `admin` (dependencia `require_admin_role`). Cualquier otro rol devuelve `403`.
 
-## Modelos (resumen)
-- **Restaurante**: id, nombre, descripcion, direccion, categoria, imagenUrl, isActive, createdAt, updatedAt
-- **Producto**: id, restauranteId, nombre, descripcion, precio, disponible, createdAt, updatedAt
+## Base URL
+```
+/api/v1
+```
+
+## Modelos
+
+### Restaurante
+| Campo | Tipo | Requerido | Notas |
+|-------|------|----------|-------|
+| id | UUID | auto | |
+| nombre | string | sí | min=1, max=255 |
+| descripcion | string | no | max=1000 |
+| direccion | string | sí | min=1, max=500 |
+| categoria | string | sí | min=1, max=100 |
+| imagen_url | string | no | max=500 |
+| is_active | bool | auto | |
+| created_at | datetime | auto | |
+| updated_at | datetime | auto | |
+
+### Producto
+| Campo | Tipo | Requerido | Notas |
+|-------|------|----------|-------|
+| id | UUID | auto | |
+| restaurante_id | UUID | auto | |
+| nombre | string | sí | min=1, max=255 |
+| descripcion | string | no | max=1000 |
+| precio | Decimal | sí | >0, 2 decimales |
+| disponible | bool | auto | default=true |
+| created_at | datetime | auto | |
+| updated_at | datetime | auto | |
 
 ---
 
 ## Endpoints HTTP
 
-> Nota: Las rutas base están definidas por el router local. En la aplicación actual, todos los endpoints de `restaurantes` y `productos` caen bajo el prefijo `/restaurants`.
+### Restaurantes
 
-### 1) Crear restaurante
-- `POST /restaurants`
-- **Roles**: admin (`require_admin_role`)
-- **Body**: `RestauranteCreate`
-  ```json
-  {
-    "nombre": "string",
-    "descripcion": "string?",
-    "direccion": "string",
-    "categoria": "string",
-    "imagenUrl": "string?"
-  }
-  ```
-- **Respuesta**: `201 Created` (Devuelve el recurso creado)
+#### 1) Crear restaurante
+- **POST** `/api/v1/restaurants`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Body**:
+```json
+{
+  "nombre": "string",
+  "descripcion": "string?",
+  "direccion": "string",
+  "categoria": "string",
+  "imagen_url": "string?"
+}
+```
+- **Respuesta**: `201 Created` + `RestauranteResponse`
 
-### 2) Listar restaurantes
-- `GET /restaurants`
-- **Roles**: Público (pero requiere `x-service-token`)
-- **Filtros (Query params)**:
-  - `categoria` (string, opcional)
-  - `is_active` (bool, default=true)
-  - `q` (string, opcional): Búsqueda por nombre o descripción
-  - `limit` (int, default=50, max=100)
-  - `offset` (int, default=0)
-- **Respuesta**: Diccionario paginado `{"items": [...], "total": int, "limit": int, "offset": int}`
+#### 2) Listar restaurantes
+- **GET** `/api/v1/restaurants`
+- **Auth**: `x-service-token` público
+- **Query params**:
+|Param|Type|Default|
+|-----|-----|-------|
+|categoria|string|null|
+|is_active|bool|true|
+|q|string|null|búsqueda por nombre/descripcion|
+|limit|int|50|max=100|
+|offset|int|0|
+- **Respuesta**:
+```json
+{
+  "items": [...RestauranteLista],
+  "total": int,
+  "limit": int,
+  "offset": int
+}
+```
 
-### 3) Obtener restaurante por id (incluye menú)
-- `GET /restaurants/{restaurante_id}`
-- **Filtros (Query params)**:
-  - `include_unavailable` (bool, default=false): Si es false, sólo incluye productos disponibles.
-- **Respuesta**: Objeto Restaurante detallado + array de productos.
+#### 3) Obtener restaurante por ID
+- **GET** `/api/v1/restaurants/{restaurante_id}`
+- **Auth**: `x-service-token`
+- **Query params**:
+|Param|Type|Default|
+|-----|-----|-------|
+|include_unavailable|bool|false|si false, filtra productos no disponibles|
+- **Respuesta**: `RestauranteDetalle` (incluye array productos)
 
-### 4) Actualizar restaurante
-- `PATCH /restaurants/{restaurante_id}`
-- **Roles**: admin (`require_admin_role`)
-- **Body**: `RestauranteUpdate` (campos parciales)
-- **Respuesta**: `200 OK` con recurso actualizado
+#### 4) Actualizar restaurante
+- **PATCH** `/api/v1/restaurants/{restaurante_id}`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Body**: `RestauranteUpdate` (campos opcionales)
+- **Respuesta**: `200 OK` + `RestauranteResponse`
 
-### 5) Activar / Desactivar restaurante
-- `POST /restaurants/{restaurante_id}/activate`
-- `POST /restaurants/{restaurante_id}/deactivate`
-- **Roles**: admin (`require_admin_role`)
-- **Respuesta**: `200 OK` con recurso modificado (`isActive` a `True` o `False` correspondientemente)
+#### 5) Activar restaurante
+- **POST** `/api/v1/restaurants/{restaurante_id}/activate`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Respuesta**: `200 OK` + `RestauranteResponse` (isActive=true)
 
----
-
-### 6) CRUD Productos
-
-> ¡Importante!: Por la configuración actual del enrutador (`api_router.include_router(products.router, prefix="/restaurants")`), todas las rutas de productos inician con `/restaurants`.
-
-- **Crear producto**: `POST /restaurants/{restaurante_id}/products`
-  - **Roles**: admin (`require_admin_role`)
-  - **Body**: `ProductoCreate`
-- **Listar productos de un restaurante**: `GET /restaurants/{restaurante_id}/products`
-  - **Filtros (Query params)**: `disponible` (bool, opcional), `limit` (default=100), `offset` (default=0)
-- **Obtener producto**: `GET /restaurants/products/{producto_id}`
-- **Actualizar producto**: `PATCH /restaurants/products/{producto_id}`
-  - **Roles**: admin (`require_admin_role`)
-- **Eliminar producto (soft-delete)**: `DELETE /restaurants/products/{producto_id}`
-  - **Roles**: admin (`require_admin_role`)
-  - **Efecto**: `204 No Content` (internamente pasa `disponible=False`).
-
----
-
-### 7) Integración con order-service (Validación Batch)
-- `POST /restaurants/products/validate-batch`
-- **Body**: `ProductoValidacionRequest`
-  ```json
-  {
-    "items": [
-      { "producto_id": "uuid", "precio_unitario": 10.5 }
-    ]
-  }
-  ```
-- **Respuesta**: `ProductoValidacionResponse`
-  - Este endpoint permite validar atómicamente los items del pedido y devolver discrepancias (nombre, precio, disponibilidad y estado global `ok`).
-
-### 8) Health Check
-- `GET /health`
-- **Respuesta**: `{"status": "healthy", "service": "restaurant-service", "version": "1.0.0"}`
+#### 6) Desactivar restaurante
+- **POST** `/api/v1/restaurants/{restaurante_id}/deactivate`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Respuesta**: `200 OK` + `RestauranteResponse` (isActive=false)
 
 ---
 
-## Consideraciones de Diseño y Gotchas Documentados
-- **Prefijos**: El código en `app/api/v1/router.py` agrupa *todo* bajo `/restaurants`. Por lo que los endpoints independientes de productos quedan como `/restaurants/products/{id}`.
-- **Autorización por Token de Servicio**: `app/main.py` define un middleware que requiere el header `x-service-token` en toda request que no sea `OPTIONS`.
-- **Soft Deletes**: `DELETE` sobre productos no elimina físicamente la fila, la marca como no disponible.
-- **Activos por defecto**: `GET /restaurants` filtra `is_active=True` por defecto. Si quieres ver todos, hay que pasar explícitamente `is_active=false` o sin filtrar según implementación.
+### Productos
+
+#### 7) Crear producto
+- **POST** `/api/v1/restaurants/{restaurante_id}/products`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Body**:
+```json
+{
+  "nombre": "string",
+  "descripcion": "string?",
+  "precio": "decimal",
+  "disponible": true
+}
+```
+- **Respuesta**: `201 Created` + `ProductoResponse`
+
+#### 8) Listar productos por restaurante
+- **GET** `/api/v1/restaurants/{restaurante_id}/products`
+- **Auth**: `x-service-token`
+- **Query params**:
+|Param|Type|Default|
+|-----|-----|-------|
+|disponible|bool|null|
+|limit|int|100|max=500|
+|offset|int|0|
+- **Respuesta**:
+```json
+{
+  "items": [...ProductoResponse],
+  "total": int,
+  "limit": int,
+  "offset": int
+}
+```
+
+#### 9) Obtener producto por ID
+- **GET** `/api/v1/restaurants/products/{producto_id}`
+- **Auth**: `x-service-token`
+- **Respuesta**: `ProductoResponse`
+
+#### 10) Actualizar producto
+- **PATCH** `/api/v1/restaurants/products/{producto_id}`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Body**: `ProductoUpdate`
+- **Respuesta**: `200 OK` + `ProductoResponse`
+
+#### 11) Eliminar producto (soft-delete)
+- **DELETE** `/api/v1/restaurants/products/{producto_id}`
+- **Auth**: `x-service-token` + JWT rol `admin`
+- **Respuesta**: `204 No Content` (internamente `disponible=false`)
+
+#### 12) Validar productos batch
+- **POST** `/api/v1/restaurants/products/validate-batch`
+- **Auth**: `x-service-token` (servicios internos)
+- **Body**:
+```json
+{
+  "items": [
+    { "producto_id": "uuid", "precio_unit": "decimal" }
+  ]
+}
+```
+- **Respuesta**:
+```json
+{
+  "items": [
+    {
+      "producto_id": "uuid",
+      "ok": bool,
+      "servidor_precio": "decimal?",
+      "nombre": "string?",
+      "disponible": "bool?",
+      "error": "string?"
+    }
+  ]
+}
+```
+
+---
+
+### Health
+
+#### 13) Health check
+- **GET** `/health`
+- **Auth**: none
+- **Respuesta**:
+```json
+{
+  "status": "healthy",
+  "service": "restaurant-service",
+  "version": "1.0.0"
+}
+```
+
+---
+
+## Gotchas
+
+1. **Prefijo real**: `/api/v1` + router_mount (`/restaurants`) = `/api/v1/restaurants`.
+2. **Soft-delete**: DELETE en productos marca `disponible=false`, no elimina físicamente.
+3. **Activos por defecto**: `GET /restaurants` filtra `is_active=true`. Pasar `is_active=false` para ver inactivos.
+4. **Token service**: middleware en `app/main.py` rechaza requests sin `x-service-token`.
+5. **Rol admin**: cualquier rol distinto de `admin` en JWT devuelve `403` en endpoints protegidos.

@@ -42,3 +42,18 @@ model CalificacionRepartidor {
   @@unique([pedidoId, userId])
   @@map("calificaciones_repartidor")
 }
+
+model PedidoEntregado {
+  id             String   @id @default(uuid()) @db.Uuid
+  pedidoId       String   @unique @db.Uuid
+  userId         String   @db.Uuid
+  repartidorId   String   @db.Uuid
+  restauranteId  String   @db.Uuid
+  deliveredAt    DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([restauranteId])
+  @@index([repartidorId])
+  @@map("pedidos_entregados")
+}

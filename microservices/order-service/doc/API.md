@@ -495,6 +495,48 @@ El Gateway valida el token y lo reenvía; el servicio valida el rol y la propied
 
 ---
 
+### 🔟 Listar Pedidos Disponibles (Para Repartidor)
+
+**GET** `/orders/available?limit=10&offset=0`
+
+**Roles:** `repartidor` | `admin`
+
+**Descripción:** Lista todos los pedidos en estado `pendiente` que aún no tienen repartidor asignado. Los repartidores usan este endpoint para descubrir pedidos disponibles para aceptar.
+
+**Query Params:**
+- `limit` — items por página (default: 10, max: 100)
+- `offset` — para paginación (default: 0)
+
+**Respuesta:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "restauranteId": "uuid",
+      "repartidorId": null,
+      "estado": "pendiente",
+      "subtotal": 27.25,
+      "costoEntrega": 2.00,
+      "total": 29.25,
+      "direccionEntrega": "Cra 5 # 20-30, Apto 304",
+      "createdAt": "2026-04-13T10:30:00Z",
+      "updatedAt": "2026-04-13T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "limit": 10,
+    "offset": 0,
+    "total": 5
+  }
+}
+```
+
+- `200 OK`: Lista de pedidos disponibles
+- `401 Unauthorized`: Token inválido
+- `403 Forbidden`: Solo repartidor o admin
+
 ## Estructura de Errores
 
 Todos los errores retornan un objeto estándar:

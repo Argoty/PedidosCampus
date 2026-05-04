@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use sqlx::Error as SqlxError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -23,8 +24,14 @@ pub enum AppError {
     #[error("Unauthorized")]
     Unauthorized,
 
-    #[error("Internal server error")]
-    InternalError,
+    #[error("Internal server error: {0}")]
+    InternalError(String),
+
+    #[error("RabbitMQ error: {0}")]
+    RabbitMQError(#[from] lapin::Error),
+
+    #[error("SQLx error: {0}")]
+    SqlxError(#[from] SqlxError),
 }
 
 impl IntoResponse for AppError {
@@ -41,9 +48,17 @@ impl IntoResponse for AppError {
             ),
             AppError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
-            AppError::InternalError => (
+            AppError::InternalError(msg) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal server error".to_string(),
+                format!("Internal server error: {}", msg),
+            ),
+            AppError::RabbitMQError(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("RabbitMQ error: {}", e),
+            ),
+            AppError::SqlxError(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("SQLx error: {}", e),
             ),
         };
 

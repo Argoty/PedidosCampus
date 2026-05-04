@@ -1,5 +1,6 @@
-use rating_service::{app, config};
+use rating_service::{app, config, delivered_order_service, delivered_order_repo, rabbitmq};
 use std::env;
+use std::sync::Arc;
 use tracing_subscriber;
 
 #[tokio::main]
@@ -17,8 +18,21 @@ async fn main() {
         .await
         .expect("Failed to initialize database");
 
-    // Create app
-    let app = app::create_app(db_pool);
+    // Initialize delivered order repository and service
+    let delivered_order_repo = delivered_order_repo::DeliveredOrderRepository::new(db_pool.clone());
+    let delivered_order_service = Arc::new(delivered_order_service::DeliveredOrderService::new(delivered_order_repo));
+
+    // Start RabbitMQ consumer as background task
+    let rabbitmq_url = env::var("RABBITMQ_URL").unwrap_or_else(|_| "amqp://guest:guest@rabbitmq:5672/".into());
+    let exchange = env::var("RABBITMQ_EXCHANGE").unwrap_or_else(|_| "orders".into());
+    let queue = env::var("RABBITMQ_QUEUE").unwrap_or_else(|_| "rating-service".into());
+
+    if let Err(e) = rabbitmq::consumer::start_consumer(&rabbitmq_url, &exchange, &queue, delivered_order_service.clone()).await {
+        tracing::error!("Error starting RabbitMQ consumer: {:?}", e);
+    }
+
+    // Create app with state
+    let app = app::create_app(db_pool, delivered_order_service);
 
     // Get port
     let port = env::var("PORT")

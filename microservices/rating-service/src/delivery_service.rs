@@ -3,20 +3,28 @@ use chrono::Utc;
 use crate::errors::Result;
 use crate::models::DeliveryRating;
 use crate::delivery_repository::DeliveryRatingRepository;
+use crate::delivered_order_service::DeliveredOrderService;
 
 #[derive(Clone)]
 pub struct DeliveryRatingService {
     repo: DeliveryRatingRepository,
+    delivered_order_service: std::sync::Arc<DeliveredOrderService>,
 }
 
 impl DeliveryRatingService {
-    pub fn new(repo: DeliveryRatingRepository) -> Self {
-        Self { repo }
+    pub fn new(repo: DeliveryRatingRepository, delivered_order_service: std::sync::Arc<DeliveredOrderService>) -> Self {
+        Self { repo, delivered_order_service }
     }
 
     pub async fn create(&self, pedido_id: Uuid, repartidor_id: Uuid, user_id: Uuid, estrellas: i32, comentario: Option<String>) -> Result<DeliveryRating> {
         if estrellas < 1 || estrellas > 5 {
             return Err(crate::errors::AppError::ValidationError("estrellas must be between 1 and 5".to_string()));
+        }
+
+        // Validate that the order was delivered
+        let is_delivered = self.delivered_order_service.is_order_delivered(pedido_id).await?;
+        if !is_delivered {
+            return Err(crate::errors::AppError::ValidationError("El pedido no ha sido entregado".to_string()));
         }
 
         let rating = DeliveryRating {

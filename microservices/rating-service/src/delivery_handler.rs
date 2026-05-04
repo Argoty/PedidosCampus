@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use axum::http::HeaderMap;
 use serde::Deserialize;
 use uuid::Uuid;
 use crate::{
@@ -31,12 +32,21 @@ pub struct ListQuery {
 )]
 pub async fn create_delivery_rating(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<CreateRatingRequest>,
 ) -> Result<(StatusCode, Json<RatingResponse>)> {
     let repartidor_id = payload.repartidor_id.ok_or_else(|| crate::errors::AppError::ValidationError("repartidor_id required".to_string()))?;
     
-    // Extract user_id from JWT (mock for now)
-    let user_id = Uuid::new_v4();
+    // Extract user_id from x-user-id header (injected by gateway from JWT)
+    // Fall back to generating a UUID only if header is missing (for backwards compatibility)
+    let user_id = headers
+        .get("x-user-id")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .unwrap_or_else(|| {
+            tracing::warn!("No x-user-id header found, generating random UUID (backwards compatibility)");
+            Uuid::new_v4()
+        });
 
     let rating = state.delivery_service
         .create(payload.pedido_id, repartidor_id, user_id, payload.estrellas, payload.comentario)

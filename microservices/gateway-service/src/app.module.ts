@@ -27,6 +27,12 @@ export class AppModule implements NestModule {
               // Inyectar secret en la petición que va a la red interna docker
               proxyReq.setHeader('x-service-token', serviceTokenEnv);
 
+              // Inyectar userId del JWT decodificado para servicios que lo necesiten
+              // El middleware ya validó el JWT y guardó el resultado en req['user']
+              if (req['user'] && req['user'].sub) {
+                proxyReq.setHeader('x-user-id', req['user'].sub);
+              }
+
               // FIX para http-proxy-middleware vs NestJS body-parser
               // NestJS consume el request body antes de que llegue al proxy.
               // Si hay un body, debemos recodificarlo y re-inyectarlo en el stream del proxy.

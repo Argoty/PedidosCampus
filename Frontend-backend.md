@@ -70,17 +70,7 @@ Este documento compara los endpoints que el frontend (`Next.js`) consume contra 
 
 **Gateway**: Monta `/restaurants` → `http://restaurant-service:8001/api/v1` (agrega prefijo).
 
-**Discrepancia**: El frontend usa `/restaurants/{id}/{action}` (donde action = activate/deactivate). El backend expone paths explícitos `/activate` y `/deactivate`. El frontend concatena directamente: `/restaurants/${id}/${action}` → `/restaurants/uuid/activate`. Esto **NO** coincide con la API del backend: debe ser `/restaurants/{id}/activate`.
-
-**Propuesta Fix en Frontend**: Cambiar de:
-```typescript
-apiFetch(`/restaurants/${id}/${action}`, { method: 'POST' })
-```
-a:
-```typescript
-apiFetch(`/restaurants/${id}/${action === 'activate' ? 'activate' : 'deactivate'}`, { method: 'POST' })
-```
-O mejor, usar paths explícitos.
+**Discrepancia**: ~~NINGUNA~~ — El frontend construye dinámicamente `/restaurants/${id}/${action}` donde action = 'activate' o 'deactivate', generando paths `/restaurants/{id}/activate` y `/restaurants/{id}/deactivate`. Esto coincide con la API del backend. ~~Debe ser~~**YA ESTÁ CORRECTO**.
 
 ---
 
@@ -115,7 +105,15 @@ O mejor, usar paths explícitos.
 
 **Gateway**: Monta `/ratings` → `http://rating-service:8003`.
 
-**Nota**: El rating-service genera `user_id` aleatorio (mock). No extrae del JWT actualmente. Esto es una **limitación conocida** (API.md indica "futuro: extraer del JWT").
+**Extracción de user_id**:
+- **Antes**: Rating-service generaba `user_id` aleatorio (mock), ignoraba el JWT.
+- **Ahora**: El gateway inyecta header `x-user-id` extraído del claim `sub` del JWT. El rating-service lee este header y lo usa como `user_id`.
+- **Fallback**: Si el header no está presente (llamadas directas sin gateway), usa UUID aleatorio para backwards compatibility.
+
+**Archivo modificado**:
+- `gateway-service/src/app.module.ts` — inyecta `x-user-id` header
+- `rating-service/src/restaurant_handler.rs` — extrae de header
+- `rating-service/src/delivery_handler.rs` — extrae de header
 
 ---
 
@@ -123,10 +121,13 @@ O mejor, usar paths explícitos.
 
 | Frontend (Método) | Endpoint Consumido | Backend_EXPonía | STATUS |
 |------------------|-------------------|---------------|--------|
-| GET | `/notifications` | ⚠️No documentado (Worker) | **?** |
-| PATCH | `/notifications/{id}/leer` | ⚠️No documentado (Worker) | **?** |
+| GET | `/notifications` | ✅Existe (API.md) | **OK** |
+| PATCH | `/notifications/{id}/leer` | ✅Existe (API.md) | **OK** |
 
-**Estado**: El Worker (`notificaciones-service`) corre como Cloudflare Worker. No hay API.md para este servicio. Se asume endpoint existe por consumo del frontend. **Documentación pendiente**.
+**Worker**: Cloudflare Worker. API.md documentado en `notificaciones-service/API.md`.
+**Notas**:
+- El worker extrae `userId` del claim `sub` del JWT para filtrar notificaciones por usuario.
+- El endpoint POST `/notifications` es solo para comunicación inter-servicios (no requiere JWT).
 
 ---
 
@@ -179,7 +180,7 @@ Frontend: GET /ratings/delivery/user/{userId}
 Frontend: POST /ratings/delivery
 ```
 
-**Compatibilidad**: ⚠️ Rating-service genera user_id aleatorio (no extrae del JWT). Las calificaciones se crean pero no están vinculadas al usuario real. **Esto es un bug-known**: el frontend envía el user.id del JWT, pero el backend lo ignora.
+**Compatibilidad**: ✅ Rating-service ahora extrae el `user_id` del header `x-user-id` inyectado por el gateway. Las calificaciones quedan vinculadas al usuario real que realizó el pedido.
 
 ---
 
@@ -196,11 +197,11 @@ Frontend: PATCH /notifications/{id}/leer
 
 ## Resumen de Discrepancias
 
-| # | Área | Problema | Severidad | Recomendación |
-|---|------|---------|----------|---------------|
-| 1 | Restaurant | Frontend usa `/restaurants/{id}/${action}` vs backend `/restaurants/{id}/activate` | Media | Normalizar paths en frontend |
-| 2 | Ratings | Backend ignora user_id del JWT (usa uuid aleatorio) | Alta | Implementar extracción de JWT en rating-service |
-| 3 | Notificaciones | Sin API.md del worker | Media | Crear API.md para worker |
+| # | Área | Problema | Estado | Notas |
+|---|------|---------|--------|-------|
+| 1 ~~| Restaurant~~ | ~~Frontend usa paths dinámicos~~ | ✅ **RESUELTO** | ~~El frontend ya genera los paths correctos~~ — Validado: ninguna discrepancia |
+| ~~2~~ | ~~Ratings~~ | ~~Backend ignora user_id del JWT~~ | ✅ **RESUELTO** | Gateway ahora inyecta `x-user-id`; rating-service lo consume |
+| 2 | Notificaciones | ✅ **DOCUMENTADO** | API.md existe en `notificaciones-service/API.md` |
 
 ---
 
@@ -213,6 +214,7 @@ Frontend: PATCH /notifications/{id}/leer
 | Restaurant | `microservices/restaurant-service/doc/API.md` |
 | Order | `microservices/order-service/doc/API.md` |
 | Rating | `microservices/rating-service/API.md` |
+| Notificaciones | `microservices/notificaciones-service/API.md` |
 | Gateway | `microservices/gateway-service/src/app.module.ts` |
 | API Client | `frontend/src/lib/api.ts` |
 

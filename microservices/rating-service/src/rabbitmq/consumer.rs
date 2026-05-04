@@ -4,7 +4,6 @@ use lapin::options::{QueueDeclareOptions, ExchangeDeclareOptions, BasicConsumeOp
 use lapin::types::FieldTable;
 use serde::Deserialize;
 use std::sync::Arc;
-use tracing::info;
 
 use super::super::delivered_order_service::DeliveredOrderService;
 use super::super::errors::AppError;
@@ -28,14 +27,28 @@ pub async fn start_consumer(
     queue: &str,
     delivered_order_service: Arc<DeliveredOrderService>,
 ) -> Result<(), AppError> {
-     let conn = Connection::connect(rabbitmq_url, ConnectionProperties::default())
-         .await
-         .map_err(|e| AppError::InternalError(format!("RabbitMQ connection failed: {:?}", e)))?;
-     let channel = conn.create_channel()
-         .await
-         .map_err(|e| AppError::InternalError(format!("Channel creation failed: {:?}", e)))?;
+    tracing::info!("Attempting to connect to RabbitMQ at {}", rabbitmq_url);
+    
+    let conn = Connection::connect(rabbitmq_url, ConnectionProperties::default())
+        .await
+        .map_err(|e| {
+            let error_msg = format!("RabbitMQ connection failed: {:?}", e);
+            tracing::error!("{}", error_msg);
+            AppError::InternalError(error_msg)
+        })?;
+    
+    tracing::info!("Connected to RabbitMQ, creating channel...");
+    
+    let channel = conn.create_channel()
+        .await
+        .map_err(|e| {
+            let error_msg = format!("Channel creation failed: {:?}", e);
+            tracing::error!("{}", error_msg);
+            AppError::InternalError(error_msg)
+        })?;
 
      // Declare exchange (topic)
+     tracing::info!("Declaring exchange: {} (type: topic)", exchange);
      channel.exchange_declare(
          exchange,
          lapin::ExchangeKind::Topic,
@@ -46,9 +59,14 @@ pub async fn start_consumer(
          FieldTable::default(),
      )
      .await
-     .map_err(|e| AppError::InternalError(format!("Exchange declare failed: {:?}", e)))?;
+     .map_err(|e| {
+         let error_msg = format!("Exchange declare failed: {:?}", e);
+         tracing::error!("{}", error_msg);
+         AppError::InternalError(error_msg)
+     })?;
 
      // Declare queue
+     tracing::info!("Declaring queue: {}", queue);
      channel.queue_declare(
          queue,
          QueueDeclareOptions {
@@ -58,9 +76,14 @@ pub async fn start_consumer(
          FieldTable::default(),
      )
      .await
-     .map_err(|e| AppError::InternalError(format!("Queue declare failed: {:?}", e)))?;
+     .map_err(|e| {
+         let error_msg = format!("Queue declare failed: {:?}", e);
+         tracing::error!("{}", error_msg);
+         AppError::InternalError(error_msg)
+     })?;
 
      // Bind queue to exchange with routing key
+     tracing::info!("Binding queue '{}' to exchange '{}' with routing key 'order.delivered'", queue, exchange);
      channel.queue_bind(
          queue,
          exchange,
@@ -69,9 +92,14 @@ pub async fn start_consumer(
          FieldTable::default(),
      )
      .await
-     .map_err(|e| AppError::InternalError(format!("Queue bind failed: {:?}", e)))?;
+     .map_err(|e| {
+         let error_msg = format!("Queue bind failed: {:?}", e);
+         tracing::error!("{}", error_msg);
+         AppError::InternalError(error_msg)
+     })?;
 
      // Consume messages
+     tracing::info!("Starting basic consume on queue: {}", queue);
      let mut consumer = channel.basic_consume(
          queue,
          "rating-service-consumer",
@@ -79,16 +107,22 @@ pub async fn start_consumer(
          FieldTable::default(),
      )
      .await
-     .map_err(|e| AppError::InternalError(format!("Basic consume failed: {:?}", e)))?;
+     .map_err(|e| {
+         let error_msg = format!("Basic consume failed: {:?}", e);
+         tracing::error!("{}", error_msg);
+         AppError::InternalError(error_msg)
+     })?;
 
-    info!("RabbitMQ consumer started, waiting for messages...");
+    tracing::info!("✅ RabbitMQ consumer initialized, spawning background task...");
 
     tokio::spawn(async move {
+        tracing::info!("🚀 RabbitMQ consumer background task started, waiting for messages on routing key 'order.delivered'...");
+        
         while let Some(delivery_result) = consumer.next().await {
             match delivery_result {
                 Ok(delivery) => {
                     let payload = String::from_utf8_lossy(&delivery.data);
-                    info!("Message received: {}", payload);
+                    tracing::debug!("Message received: {}", payload);
 
                     match serde_json::from_str::<OrderDeliveredEvent>(&payload) {
                         Ok(event) => {

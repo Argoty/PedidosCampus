@@ -133,7 +133,7 @@ services:
       SERVICE_TOKEN: ${SERVICE_TOKEN}
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_EXCHANGE: orders
       RABBITMQ_QUEUE_PREFIX: order-service
       DELIVERY_COST: 2
@@ -174,7 +174,7 @@ services:
       PORT: 8003
       RUST_LOG: info
       DATABASE_URL: postgresql://rating_user:${RATING_DB_PASSWORD:-rating_password}@rating-db:5432/rating_db?sslmode=disable
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_EXCHANGE: orders
       RABBITMQ_QUEUE: rating-service
     depends_on:

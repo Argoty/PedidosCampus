@@ -27,8 +27,17 @@ async fn main() {
     let exchange = env::var("RABBITMQ_EXCHANGE").unwrap_or_else(|_| "orders".into());
     let queue = env::var("RABBITMQ_QUEUE").unwrap_or_else(|_| "rating-service".into());
 
-    if let Err(e) = rabbitmq::consumer::start_consumer(&rabbitmq_url, &exchange, &queue, delivered_order_service.clone()).await {
-        tracing::error!("Error starting RabbitMQ consumer: {:?}", e);
+    tracing::info!("Starting RabbitMQ consumer with URL: {}, exchange: {}, queue: {}", 
+        rabbitmq_url, exchange, queue);
+
+    match rabbitmq::consumer::start_consumer(&rabbitmq_url, &exchange, &queue, delivered_order_service.clone()).await {
+        Ok(_) => {
+            tracing::info!("✅ RabbitMQ consumer started successfully");
+        }
+        Err(e) => {
+            tracing::error!("❌ Failed to start RabbitMQ consumer: {:?}", e);
+            tracing::warn!("Service will continue but will NOT receive order.delivered events");
+        }
     }
 
     // Create app with state

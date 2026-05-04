@@ -72,5 +72,40 @@ pub async fn init_db_pool() -> Result<PgPool, sqlx::Error> {
     .execute(&pool)
     .await?;
 
+    // Create pedidos_entregados table for delivered orders tracking
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS pedidos_entregados (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            pedido_id UUID NOT NULL UNIQUE,
+            user_id UUID NOT NULL,
+            repartidor_id UUID NOT NULL,
+            restaurante_id UUID NOT NULL,
+            delivered_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )
+        "#,
+    )
+    .execute(&pool)
+    .await?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_pedidos_entregados_pedido_id ON pedidos_entregados(pedido_id)"
+    )
+    .execute(&pool)
+    .await?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_pedidos_entregados_user_id ON pedidos_entregados(user_id)"
+    )
+    .execute(&pool)
+    .await?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_pedidos_entregados_repartidor_id ON pedidos_entregados(repartidor_id)"
+    )
+    .execute(&pool)
+    .await?;
+
     Ok(pool)
 }

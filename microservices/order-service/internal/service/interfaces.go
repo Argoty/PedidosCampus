@@ -25,6 +25,9 @@ type OrderService interface {
 	// ListDelivererOrders retrieves orders assigned to a specific deliverer
 	ListDelivererOrders(ctx context.Context, actorID uuid.UUID, role string, repartidorID uuid.UUID, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
 
+	// ListAvailableOrders lists all pending orders without a deliverer (for repartidor to claim)
+	ListAvailableOrders(ctx context.Context, role string, query dto.ListOrdersQuery) ([]model.Pedido, int64, error)
+
 	// AcceptOrder accepts an order (deliverer assigns themselves)
 	AcceptOrder(ctx context.Context, orderID uuid.UUID, repartidorID uuid.UUID) (*model.Pedido, error)
 

@@ -66,25 +66,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS (preparar para Gateway)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowGateway", builder =>
-    {
-        builder
-            .WithOrigins("http://localhost:3000", "http://localhost:3001") // Gateway y frontend
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
-
 // ===== Pipeline de la aplicación =====
 
 var app = builder.Build();
 
-// Aplicar CORS
-app.UseCors("AllowGateway");
+// Auth Middleware...
 
 // Decode JWT claims without signature verification
 app.Use(async (context, next) => {

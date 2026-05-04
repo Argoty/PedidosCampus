@@ -23,18 +23,6 @@ async function bootstrap() {
     }),
   );
 
-  const corsOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
-    : ['http://localhost:3000'];
-
-  app.enableCors({
-    origin: corsOrigins,
-    // Permite que el navegador envie cookies entre frontend y auth-service.
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
 }

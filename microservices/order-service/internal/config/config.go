@@ -86,7 +86,7 @@ func LoadConfig() (*Config, error) {
 			URL:     getEnv("RESTAURANT_SERVICE_URL", "http://localhost:3002"),
 			Timeout: parseDuration(getEnv("RESTAURANT_SERVICE_TIMEOUT", "5s")),
 		},
-		NotifService: ServiceConfig{
+NotifService: ServiceConfig{
 			URL:     getEnv("NOTIFICACIONES_SERVICE_URL", "http://localhost:8787"),
 			Timeout: parseDuration(getEnv("NOTIFICACIONES_SERVICE_TIMEOUT", "5s")),
 		},

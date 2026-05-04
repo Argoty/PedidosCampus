@@ -108,34 +108,56 @@ async function handleCreate(request: Request, env: Env): Promise<Response> {
   return jsonResponse(notification, 201);
 }
 
-async function handleListByUser(request: Request, env: Env, userId: string): Promise<Response> {
-  const parsedUserId = asNonEmptyString(userId);
-  if (!parsedUserId) {
-    return errorResponse("userId invalido.");
-  }
-
-  if (isInvalidUserId(parsedUserId)) {
-    return errorResponse("userId invalido.");
-  }
-
+async function handleListByUser(
+  request: Request,
+  env: Env,
+  authenticatedUserId: string
+): Promise<Response> {
   const url = new URL(request.url);
-  // Soporta paginacion simple para escalar sin cambiar contrato base.
   const limit = parseLimit(url.searchParams.get("limit"));
   const cursor = url.searchParams.get("cursor") ?? undefined;
 
-  const result = await listNotificationsByUser(env, parsedUserId, { limit, cursor });
+  const result = await listNotificationsByUser(env, authenticatedUserId, { limit, cursor });
   return jsonResponse(result);
 }
 
-async function handleMarkAsRead(env: Env, notificationId: string): Promise<Response> {
+async function handleMarkAsRead(
+  env: Env,
+  notificationId: string,
+  authenticatedUserId: string
+): Promise<Response> {
   const id = asNonEmptyString(notificationId);
   if (!id) {
     return errorResponse("id invalido.");
   }
 
+  // Obtener notificación para validar propiedad
+  const notification = await (async () => {
+    const raw = await env.NOTIFICATIONS.get(`notif_id:${id}`);
+    if (!raw) return null;
+
+    const primaryKey = raw;
+    const notifData = await env.NOTIFICATIONS.get(primaryKey);
+    if (!notifData) return null;
+
+    try {
+      return JSON.parse(notifData);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!notification) {
+    return errorResponse("Notificacion no encontrada.", 404);
+  }
+
+  // Validar propiedad
+  if (notification.userId !== authenticatedUserId) {
+    return errorResponse("Forbidden - No tienes permisos", 403);
+  }
+
   const updated = await markNotificationAsRead(env, id);
   if (!updated) {
-    // El id no existe o el documento estaba corrupto y no pudo actualizarse.
     return errorResponse("Notificacion no encontrada.", 404);
   }
 
@@ -146,6 +168,7 @@ export async function routeNotificationEndpoints(
   request: Request,
   env: Env,
   pathname: string,
+  authenticatedUserId: string
 ): Promise<RouteMatch> {
   // Router HTTP minimalista sin frameworks (requisito del proyecto).
   if (pathname === "/notifications") {
@@ -156,18 +179,14 @@ export async function routeNotificationEndpoints(
       };
     }
 
-    return {
-      handled: true,
-      response: methodNotAllowedResponse(),
-    };
-  }
-
-  const userListMatch = pathname.match(/^\/notifications\/([^/]+)$/);
-  if (userListMatch) {
     if (request.method === "GET") {
       return {
         handled: true,
-        response: await handleListByUser(request, env, decodeURIComponent(userListMatch[1])),
+        response: await handleListByUser(
+          request,
+          env,
+          authenticatedUserId
+        ),
       };
     }
 
@@ -182,7 +201,11 @@ export async function routeNotificationEndpoints(
     if (request.method === "PATCH") {
       return {
         handled: true,
-        response: await handleMarkAsRead(env, decodeURIComponent(markReadMatch[1])),
+        response: await handleMarkAsRead(
+          env,
+          decodeURIComponent(markReadMatch[1]),
+          authenticatedUserId
+        ),
       };
     }
 

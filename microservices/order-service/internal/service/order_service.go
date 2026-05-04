@@ -358,6 +358,24 @@ func (s *orderServiceImpl) ListDelivererOrders(ctx context.Context, actorID uuid
 	return s.repo.ListOrdersByDeliverer(ctx, repartidorID, query.Limit, query.Offset, query.Estado)
 }
 
+// ListAvailableOrders lists all pending orders without a deliverer (for repartidor to claim)
+func (s *orderServiceImpl) ListAvailableOrders(ctx context.Context, role string, query dto.ListOrdersQuery) ([]model.Pedido, int64, error) {
+	// Any repartidor or admin can see available orders
+	if role != "admin" && role != "repartidor" {
+		return nil, 0, errors.ErrForbidden
+	}
+
+	// Default pagination
+	if query.Limit == 0 {
+		query.Limit = 10
+	}
+	if query.Limit > 100 {
+		query.Limit = 100
+	}
+
+	return s.repo.ListAvailableOrders(ctx, query.Limit, query.Offset)
+}
+
 // AcceptOrder accepts an order (deliverer assigns themselves)
 func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, repartidorID uuid.UUID) (*model.Pedido, error) {
 	pedido, err := s.repo.AcceptOrder(ctx, orderID, repartidorID)

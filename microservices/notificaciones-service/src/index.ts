@@ -6,16 +6,7 @@ const JSON_HEADERS = {
 
 // CORS minimo para poder probar desde navegador/Postman sin bloqueo.
 function withCorsHeaders(response: Response): Response {
-  const headers = new Headers(response.headers);
-  headers.set("access-control-allow-origin", "*");
-  headers.set("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
-  headers.set("access-control-allow-headers", "content-type,authorization");
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  return response;
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -90,7 +81,7 @@ export default {
       // POST /notifications es Order Service (no requiere JWT).
       const userId = extractUserIdFromJwt(request.headers.get("authorization"));
       const needsAuth = (pathname === "/notifications" && request.method === "GET") ||
-                        pathname.match(/^\/notifications\/[^/]+\/leer$/);
+        pathname.match(/^\/notifications\/[^/]+\/leer$/);
 
       if (needsAuth && !userId) {
         return withCorsHeaders(

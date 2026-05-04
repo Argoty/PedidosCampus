@@ -27,6 +27,9 @@ type OrderRepository interface {
 	// ListOrdersByDeliverer retrieves orders assigned to a specific deliverer
 	ListOrdersByDeliverer(ctx context.Context, repartidorID uuid.UUID, limit, offset int, estado string) ([]model.Pedido, int64, error)
 
+	// ListAvailableOrders retrieves all pending orders without a deliverer (for repartidor to claim)
+	ListAvailableOrders(ctx context.Context, limit, offset int) ([]model.Pedido, int64, error)
+
 	// UpdateOrderStatus updates the order status and creates a state log entry
 	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, newEstado model.EstadoPedido, changedBy *uuid.UUID) (*model.Pedido, error)
 

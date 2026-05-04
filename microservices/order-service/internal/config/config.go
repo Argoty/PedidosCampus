@@ -84,7 +84,7 @@ func LoadConfig() (*Config, error) {
 			URL:     getEnv("RESTAURANT_SERVICE_URL", "http://localhost:3002"),
 			Timeout: parseDuration(getEnv("RESTAURANT_SERVICE_TIMEOUT", "5s")),
 		},
-		DeliveryCost: getEnvFloat("DELIVERY_COST", 200),
+		DeliveryCost: getEnvFloat("DELIVERY_COST", 1500),
 		LogLevel:     getEnv("LOG_LEVEL", "info"),
 	}
 

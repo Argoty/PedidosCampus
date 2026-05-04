@@ -6,7 +6,7 @@ async function bootstrap() {
 
   // Habilitar CORS centralizado para todo el clúster
   app.enableCors({
-    origin: '*', // Permitir todos para dev. En producción especificar frontend.
+    origin: true, // NestJS reflejará el origen de la peticion ("creará" el origin: 'http://localhost:3000' dinámico)
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });

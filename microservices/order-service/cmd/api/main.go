@@ -124,6 +124,9 @@ func main() {
 		// List active orders (admin only)
 		protected.GET("/active", middleware.RequireRole("admin"), orderHandler.ListActiveOrders)
 
+		// List available orders (for repartidor)
+		protected.GET("/available", middleware.RequireRole("repartidor", "admin"), orderHandler.ListAvailableOrders)
+
 		// List deliverer orders
 		protected.GET("/deliverer/:repartidorId", orderHandler.ListDelivererOrders)
 	}

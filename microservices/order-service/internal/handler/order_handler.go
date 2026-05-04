@@ -287,6 +287,55 @@ func (h *OrderHandler) ListDelivererOrders(c *gin.Context) {
 	})
 }
 
+// ListAvailableOrders handles GET /orders/available (for repartidor to claim)
+// @Summary List available orders for delivery
+// @Description List all pending orders without a deliverer
+// @Tags orders
+// @Security Bearer
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} dto.PaginatedResponse
+// @Router /orders/available [get]
+func (h *OrderHandler) ListAvailableOrders(c *gin.Context) {
+	var query dto.ListOrdersQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, errors.ErrValidation)
+		return
+	}
+
+	role, err := middleware.GetRole(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errors.ErrUnauthorized)
+		return
+	}
+
+	pedidos, total, err := h.service.ListAvailableOrders(c.Request.Context(), role, query)
+	if err != nil {
+		if appErr, isAppErr := err.(*errors.AppError); isAppErr {
+			c.JSON(appErr.HTTPStatus, appErr)
+			return
+		}
+		appErr := errors.ErrInternal
+		appErr.Message = err.Error()
+		c.JSON(appErr.HTTPStatus, appErr)
+		return
+	}
+
+	responses := make([]dto.OrderResponse, len(pedidos))
+	for i, p := range pedidos {
+		responses[i] = mapPedidoToResponse(&p)
+	}
+
+	c.JSON(http.StatusOK, dto.PaginatedResponse{
+		Data: responses,
+		Pagination: dto.PaginationMetadata{
+			Limit:  query.Limit,
+			Offset: query.Offset,
+			Total:  total,
+		},
+	})
+}
+
 // AcceptOrder handles POST /orders/:orderId/accept
 // @Summary Accept an order (deliverer)
 // @Description Accept an order for delivery

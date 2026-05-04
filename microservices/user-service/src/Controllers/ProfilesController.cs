@@ -37,7 +37,7 @@ public class ProfilesController : ControllerBase
     /// Roles: usuario, repartidor
     /// </summary>
     [HttpGet("me")]
-    [Authorize(Roles = "usuario,repartidor")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<UserProfileResponse>> GetMyProfile()
     {
         // TODO: Extraer userId del JWT (User.FindFirst("sub")?.Value)
@@ -105,7 +105,7 @@ public class ProfilesController : ControllerBase
     /// Roles: usuario, repartidor
     /// </summary>
     [HttpPatch("me")]
-    [Authorize(Roles = "usuario,repartidor")]
+    [Authorize(Roles = "usuario,repartidor,admin")]
     public async Task<ActionResult<UserProfileResponse>> UpdateMyProfile([FromBody] UpdateProfileRequest request)
     {
         // TODO: Extraer userId del JWT

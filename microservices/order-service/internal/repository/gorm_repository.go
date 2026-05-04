@@ -238,6 +238,35 @@ func (r *GORMOrderRepository) ListOrdersByDeliverer(ctx context.Context, reparti
 	return pedidos, total, nil
 }
 
+// ListAvailableOrders retrieves all pending orders without a deliverer (for repartidor to claim)
+func (r *GORMOrderRepository) ListAvailableOrders(ctx context.Context, limit, offset int) ([]model.Pedido, int64, error) {
+	var pedidos []model.Pedido
+	var total int64
+
+	query := r.db.WithContext(ctx).Where("estado = ? AND repartidor_id IS NULL", "pendiente")
+
+	// Count total
+	if err := query.Model(&model.Pedido{}).Count(&total).Error; err != nil {
+		return nil, 0, errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
+
+	// Fetch paginated results
+	if err := query.
+		Preload("Items").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&pedidos).Error; err != nil {
+		return nil, 0, errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
+
+	return pedidos, total, nil
+}
+
 // UpdateOrderStatus updates the order status and creates a state log entry
 func (r *GORMOrderRepository) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, newEstado model.EstadoPedido, changedBy *uuid.UUID) (*model.Pedido, error) {
 	tx := r.db.WithContext(ctx).Begin()

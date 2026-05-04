@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/PedidosCampus/order-service/internal/config"
 	"github.com/PedidosCampus/order-service/internal/dto"
 	"github.com/PedidosCampus/order-service/internal/handler"
 	"github.com/PedidosCampus/order-service/internal/middleware"
@@ -98,7 +100,13 @@ func TestAcceptOrder_ValidRequest_SameDeliverer(t *testing.T) {
 
 	repo := NewTestMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	svc := service.NewOrderService(repo, publisher, 2.0)
+	cfg := &config.Config{
+		RestService: config.ServiceConfig{
+			URL:     "http://localhost:3002",
+			Timeout: 5 * time.Second,
+		},
+	}
+	svc := service.NewOrderService(repo, publisher, 2.0, cfg)
 	h := handler.NewOrderHandler(svc)
 
 	orderID := uuid.New()
@@ -152,7 +160,13 @@ func TestAcceptOrder_InvalidRequest_DifferentDeliverer(t *testing.T) {
 
 	repo := NewTestMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	svc := service.NewOrderService(repo, publisher, 2.0)
+	cfg := &config.Config{
+		RestService: config.ServiceConfig{
+			URL:     "http://localhost:3002",
+			Timeout: 5 * time.Second,
+		},
+	}
+	svc := service.NewOrderService(repo, publisher, 2.0, cfg)
 	h := handler.NewOrderHandler(svc)
 
 	orderID := uuid.New()
@@ -211,7 +225,13 @@ func TestAcceptOrder_InvalidOrderID(t *testing.T) {
 
 	repo := NewTestMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	svc := service.NewOrderService(repo, publisher, 2.0)
+	cfg := &config.Config{
+		RestService: config.ServiceConfig{
+			URL:     "http://localhost:3002",
+			Timeout: 5 * time.Second,
+		},
+	}
+	svc := service.NewOrderService(repo, publisher, 2.0, cfg)
 	h := handler.NewOrderHandler(svc)
 
 	userID := uuid.New()
@@ -252,7 +272,13 @@ func TestAcceptOrder_OrderNotFound(t *testing.T) {
 
 	repo := NewTestMockOrderRepository()
 	publisher := rabbitmq.NewMockPublisher()
-	svc := service.NewOrderService(repo, publisher, 2.0)
+	cfg := &config.Config{
+		RestService: config.ServiceConfig{
+			URL:     "http://localhost:3002",
+			Timeout: 5 * time.Second,
+		},
+	}
+	svc := service.NewOrderService(repo, publisher, 2.0, cfg)
 	h := handler.NewOrderHandler(svc)
 
 	orderID := uuid.New()

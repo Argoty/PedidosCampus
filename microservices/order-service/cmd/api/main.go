@@ -63,7 +63,7 @@ func main() {
 
 	// Initialize layers
 	orderRepo := repository.NewGORMOrderRepository(db)
-	orderService := service.NewOrderService(orderRepo, publisher, cfg.DeliveryCost)
+	orderService := service.NewOrderService(orderRepo, publisher, cfg.DeliveryCost, cfg)
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	// Setup Gin engine

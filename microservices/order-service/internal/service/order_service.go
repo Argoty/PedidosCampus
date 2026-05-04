@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/PedidosCampus/order-service/internal/config"
 	"github.com/PedidosCampus/order-service/internal/dto"
 	"github.com/PedidosCampus/order-service/internal/model"
 	"github.com/PedidosCampus/order-service/internal/repository"
@@ -25,15 +24,66 @@ type orderServiceImpl struct {
 	repo         repository.OrderRepository
 	publisher    rabbitmq.EventPublisher
 	deliveryCost float64
+	cfg          *config.Config
+	serviceToken string
+	httpClient   *http.Client
 }
 
 // NewOrderService creates a new order service
-func NewOrderService(repo repository.OrderRepository, publisher rabbitmq.EventPublisher, deliveryCost float64) OrderService {
+func NewOrderService(repo repository.OrderRepository, publisher rabbitmq.EventPublisher, deliveryCost float64, cfg *config.Config) OrderService {
 	return &orderServiceImpl{
 		repo:         repo,
 		publisher:    publisher,
 		deliveryCost: deliveryCost,
+		cfg:          cfg,
+		serviceToken: cfg.ServiceToken,
+		httpClient: &http.Client{
+			Timeout: cfg.NotifService.Timeout,
+		},
 	}
+}
+
+// sendNotification sends a notification to the notifications service asynchronously.
+// It returns immediately - errors are logged but don't affect the caller.
+func (s *orderServiceImpl) sendNotification(userID uuid.UUID, tipo string, mensaje string) {
+	go func() {
+		notifURL := s.cfg.NotifService.URL
+		if notifURL == "" {
+			return
+		}
+
+		notifEndpoint := strings.TrimRight(notifURL, "/") + "/notifications"
+		payload := map[string]interface{}{
+			"userId":  userID.String(),
+			"tipo":    tipo,
+			"mensaje": mensaje,
+		}
+
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			log.Printf("notification marshal failed for user %s: %v", userID.String(), err)
+			return
+		}
+
+		httpReq, err := http.NewRequest("POST", notifEndpoint, bytes.NewBuffer(jsonData))
+		if err != nil {
+			log.Printf("notification request creation failed for user %s: %v", userID.String(), err)
+			return
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("x-service-token", s.serviceToken)
+
+		resp, err := s.httpClient.Do(httpReq)
+		if err != nil {
+			log.Printf("notification call failed for user %s: %v", userID.String(), err)
+			return
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			log.Printf("notification returned status %d for user %s", resp.StatusCode, userID.String())
+		}
+	}()
 }
 
 // CreateOrder creates a new order
@@ -41,6 +91,11 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 	// Validate items
 	if len(req.Items) == 0 {
 		return nil, errors.ErrItemsEmpty
+	}
+
+	// Validate products with restaurant service
+	if err := s.validateProductsWithRestaurant(ctx, req.RestauranteID, req.Items); err != nil {
+		return nil, err
 	}
 
 	// Calculate totals
@@ -124,37 +179,105 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 		}()
 	}
 
-	// Sincronizar notificacion (WebHook local)
-	go func() {
-		notifURL := os.Getenv("NOTIFICACIONES_SERVICE_URL")
-		if notifURL == "" {
-			return
-		}
-
-		notifEndpoint := strings.TrimRight(notifURL, "/") + "/notifications"
-		payload := map[string]interface{}{
-			"userId":  createdPedido.UserID.String(),
-			"tipo":    "PEDIDO_CREADO",
-			"mensaje": fmt.Sprintf("Tu pedido en el restaurante %s ha sido creado con exito.", createdPedido.RestauranteID.String()),
-		}
-		jsonData, _ := json.Marshal(payload)
-		httpReq, _ := http.NewRequest("POST", notifEndpoint, bytes.NewBuffer(jsonData))
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("x-service-token", os.Getenv("SERVICE_TOKEN"))
-
-		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Do(httpReq)
-		if err != nil {
-			log.Printf("notification call failed for order %s: %v", createdPedido.ID.String(), err)
-			return
-		}
-		_ = resp.Body.Close()
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			log.Printf("notification returned status %d for order %s", resp.StatusCode, createdPedido.ID.String())
-		}
-	}()
+	// Send notification asynchronously
+	s.sendNotification(
+		createdPedido.UserID,
+		"PEDIDO_CREADO",
+		fmt.Sprintf("Tu pedido en el restaurante %s ha sido creado con exito.", createdPedido.RestauranteID.String()),
+	)
 
 	return createdPedido, nil
+}
+
+// validateProductsWithRestaurant validates products with the restaurant service
+func (s *orderServiceImpl) validateProductsWithRestaurant(ctx context.Context, restauranteID uuid.UUID, items []dto.CreateOrderItem) error {
+	// Prepare validation request
+	validationItems := make([]map[string]interface{}, len(items))
+	for i, item := range items {
+		validationItems[i] = map[string]interface{}{
+			"productId":   item.ProductID.String(),
+			"precioUnit":  item.PrecioUnit,
+		}
+	}
+
+	validationRequest := map[string]interface{}{
+		"items": validationItems,
+	}
+
+	jsonData, err := json.Marshal(validationRequest)
+	if err != nil {
+		return errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": "failed to marshal validation request",
+		})
+	}
+
+	// Make HTTP request to restaurant service
+	restaurantURL := s.cfg.RestService.URL
+	if restaurantURL == "" {
+		restaurantURL = "http://localhost:3002"
+	}
+	endpoint := fmt.Sprintf("%s/api/v1/products/validate-batch", strings.TrimRight(restaurantURL, "/"))
+
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": "failed to create validation request",
+		})
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-service-token", s.serviceToken)
+
+	client := &http.Client{Timeout: s.cfg.RestService.Timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": fmt.Sprintf("failed to connect to restaurant service: %v", err),
+		})
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": fmt.Sprintf("restaurant service returned status %d", resp.StatusCode),
+		})
+	}
+
+	// Parse response
+	var validationResp struct {
+		Items []struct {
+			ProductoID      string   `json:"productoId"`
+			OK              bool     `json:"ok"`
+			ServidorPrecio  *float64 `json:"servidorPrecio,omitempty"`
+			Nombre          *string  `json:"nombre,omitempty"`
+			Disponible      *bool    `json:"disponible,omitempty"`
+			Error           *string  `json:"error,omitempty"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&validationResp); err != nil {
+		return errors.ErrInternal.WithDetails(map[string]interface{}{
+			"error": "failed to decode validation response",
+		})
+	}
+
+	// Check validation results
+	for i, result := range validationResp.Items {
+		if !result.OK {
+			fieldIndex := strconv.Itoa(i)
+			errorMsg := "unknown error"
+			if result.Error != nil {
+				errorMsg = *result.Error
+			}
+			return errors.ErrValidation.WithDetails(map[string]interface{}{
+				"field": fmt.Sprintf("items[%s].productId", fieldIndex),
+				"issue": errorMsg,
+				"value": items[i].ProductID,
+			})
+		}
+	}
+
+	return nil
 }
 
 // GetOrder retrieves an order by ID with authorization check
@@ -272,6 +395,13 @@ func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, r
 		}()
 	}
 
+	// Notify user about order acceptance
+	s.sendNotification(
+		pedido.UserID,
+		"PEDIDO_ACEPTADO",
+		fmt.Sprintf("Tu pedido %s ha sido aceptado por un repartidor.", pedido.ID.String()),
+	)
+
 	return pedido, nil
 }
 
@@ -333,6 +463,20 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 		}()
 	}
 
+	// Notify user based on new status
+	if newEstado == model.EstadoEnCamino || newEstado == model.EstadoEntregado {
+		var tipo, mensaje string
+		switch newEstado {
+		case model.EstadoEnCamino:
+			tipo = "PEDIDO_EN_CAMINO"
+			mensaje = fmt.Sprintf("Tu pedido %s está en camino.", updatedPedido.ID.String())
+		case model.EstadoEntregado:
+			tipo = "PEDIDO_ENTREGADO"
+			mensaje = fmt.Sprintf("Tu pedido %s ha sido entregado. ¡Que disfrutes tu comida!", updatedPedido.ID.String())
+		}
+		s.sendNotification(updatedPedido.UserID, tipo, mensaje)
+	}
+
 	return updatedPedido, nil
 }
 
@@ -368,6 +512,13 @@ func (s *orderServiceImpl) CancelOrder(ctx context.Context, orderID uuid.UUID, u
 			s.publisher.PublishOrderCancelled(context.Background(), cancelledEvent)
 		}()
 	}
+
+	// Notify user about cancellation
+	s.sendNotification(
+		cancelledPedido.UserID,
+		"PEDIDO_CANCELADO",
+		fmt.Sprintf("Tu pedido %s ha sido cancelado.", cancelledPedido.ID.String()),
+	)
 
 	return cancelledPedido, nil
 }

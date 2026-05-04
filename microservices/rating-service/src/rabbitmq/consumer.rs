@@ -92,13 +92,51 @@ pub async fn start_consumer(
 
                     match serde_json::from_str::<OrderDeliveredEvent>(&payload) {
                         Ok(event) => {
-                            let order_id = uuid::Uuid::parse_str(&event.order_id).unwrap();
-                            let user_id = uuid::Uuid::parse_str(&event.user_id).unwrap();
-                            let repartidor_id = uuid::Uuid::parse_str(&event.repartidor_id).unwrap();
-                            let restaurante_id = uuid::Uuid::parse_str(&event.restaurante_id).unwrap();
-                            let delivered_at = chrono::DateTime::parse_from_rfc3339(&event.delivered_at)
-                                .unwrap()
-                                .with_timezone(&chrono::Utc);
+                            // Validate all UUIDs before parsing
+                            let order_id = match uuid::Uuid::parse_str(&event.order_id) {
+                                Ok(id) => id,
+                                Err(e) => {
+                                    tracing::warn!("Invalid order_id UUID in event: {:?}", e);
+                                    let _ = delivery.nack(Default::default()).await;
+                                    continue;
+                                }
+                            };
+                            
+                            let user_id = match uuid::Uuid::parse_str(&event.user_id) {
+                                Ok(id) => id,
+                                Err(e) => {
+                                    tracing::warn!("Invalid user_id UUID in event: {:?}", e);
+                                    let _ = delivery.nack(Default::default()).await;
+                                    continue;
+                                }
+                            };
+                            
+                            let repartidor_id = match uuid::Uuid::parse_str(&event.repartidor_id) {
+                                Ok(id) => id,
+                                Err(e) => {
+                                    tracing::warn!("Invalid repartidor_id UUID in event: {:?}", e);
+                                    let _ = delivery.nack(Default::default()).await;
+                                    continue;
+                                }
+                            };
+                            
+                            let restaurante_id = match uuid::Uuid::parse_str(&event.restaurante_id) {
+                                Ok(id) => id,
+                                Err(e) => {
+                                    tracing::warn!("Invalid restaurante_id UUID in event: {:?}", e);
+                                    let _ = delivery.nack(Default::default()).await;
+                                    continue;
+                                }
+                            };
+                            
+                            let delivered_at = match chrono::DateTime::parse_from_rfc3339(&event.delivered_at) {
+                                Ok(dt) => dt.with_timezone(&chrono::Utc),
+                                Err(e) => {
+                                    tracing::warn!("Invalid delivered_at datetime in event: {:?}", e);
+                                    let _ = delivery.nack(Default::default()).await;
+                                    continue;
+                                }
+                            };
 
                             if let Err(e) = delivered_order_service.register_delivered_order(
                                 order_id,
@@ -108,12 +146,13 @@ pub async fn start_consumer(
                                 delivered_at,
                             ).await {
                                 tracing::error!("Error registering delivered order: {:?}", e);
+                                let _ = delivery.nack(Default::default()).await;
+                            } else {
+                                let _ = delivery.ack(Default::default()).await;
                             }
-
-                            let _ = delivery.ack(Default::default()).await;
                         }
                         Err(e) => {
-                            tracing::error!("Error parsing event: {:?}", e);
+                            tracing::error!("Error parsing event JSON: {:?}", e);
                              let _ = delivery.nack(Default::default()).await;
                         }
                     }

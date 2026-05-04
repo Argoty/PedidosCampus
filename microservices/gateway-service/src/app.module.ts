@@ -18,9 +18,11 @@ export class AppModule implements NestModule {
     // Función auxiliar para registrar proxies limpios
     const applyProxy = (path: string, targetUrl: string) => {
       if (!targetUrl) return;
+      
       consumer
         .apply(
-          createProxyMiddleware({
+          // Pasar el path como primer argumento para el contexto del proxy
+          createProxyMiddleware(path, {
             target: targetUrl,
             changeOrigin: true,
             onProxyReq: (proxyReq, req: any, res) => {

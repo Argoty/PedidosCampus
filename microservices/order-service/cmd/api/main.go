@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/PedidosCampus/order-service/internal/config"
 	"github.com/PedidosCampus/order-service/internal/handler"
@@ -81,7 +80,8 @@ func main() {
 	engine.Use(gin.Recovery())
 	engine.Use(middleware.ErrorHandlingMiddleware())
 	engine.Use(func(c *gin.Context) {
-		if c.Request.Method != "OPTIONS" && c.GetHeader("x-service-token") != os.Getenv("SERVICE_TOKEN") {
+		// Use cfg.ServiceToken which was loaded at startup, not os.Getenv which may not work correctly
+		if c.Request.Method != "OPTIONS" && c.GetHeader("x-service-token") != cfg.ServiceToken {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
 			return
 		}

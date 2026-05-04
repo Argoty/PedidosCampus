@@ -214,9 +214,9 @@ func (s *orderServiceImpl) validateProductsWithRestaurant(ctx context.Context, r
 	// Make HTTP request to restaurant service
 	restaurantURL := s.cfg.RestService.URL
 	if restaurantURL == "" {
-		restaurantURL = "http://localhost:3002"
+		restaurantURL = "http://localhost:3000"
 	}
-	endpoint := fmt.Sprintf("%s/api/v1/restaurants/products/validate-batch", strings.TrimRight(restaurantURL, "/"))
+	endpoint := fmt.Sprintf("%s/restaurants/products/validate-batch", strings.TrimRight(restaurantURL, "/"))
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {

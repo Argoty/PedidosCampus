@@ -35,6 +35,10 @@ _test_service_token = os.getenv("TEST_SERVICE_TOKEN", "test-service-token")
 
 @app.middleware("http")
 async def check_service_token(request: Request, call_next):
+    # Skip token check for health check and OPTIONS
+    if request.method == "OPTIONS" or request.url.path == "/health":
+        return await call_next(request)
+    
     if request.method != "OPTIONS":
         token = request.headers.get("x-service-token")
         # Accept either real SERVICE_TOKEN or test token

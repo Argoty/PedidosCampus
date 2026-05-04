@@ -87,21 +87,26 @@ echo "=============================================="
 echo "AUTH SERVICE"
 echo "=============================================="
 
-# Register (public)
+# Register (public) - get real token
+REGISTER_EMAIL="test$(date +%s)@test.com"
 echo "--- POST /auth/register ---"
-request "Register user" \
-    -X POST "$BASE_URL/auth/register" \
+REGISTER_RESP=$(curl -sS -X POST "$BASE_URL/auth/register" \
     -H "Content-Type: application/json" \
     -H "x-service-token: $SERVICE_TOKEN" \
-    -d '{"nombre":"Test User","email":"test'"$(date +%s)"'@test.com","password":"123456","role":"usuario"}'
+    -d '{"nombre":"Test User","email":"'"$REGISTER_EMAIL"'","password":"123456","role":"usuario"}')
+echo "$REGISTER_RESP" | json_pretty
+TOK_USR=$(echo "$REGISTER_RESP" | jq -r '.accessToken // empty')
 
-# Login (public)
+# Login (public) - use same email
 echo "--- POST /auth/login ---"
-request "Login" \
-    -X POST "$BASE_URL/auth/login" \
+LOGIN_RESP=$(curl -sS -X POST "$BASE_URL/auth/login" \
     -H "Content-Type: application/json" \
     -H "x-service-token: $SERVICE_TOKEN" \
-    -d '{"email":"test@test.com","password":"123456"}'
+    -d '{"email":"'"$REGISTER_EMAIL"'","password":"123456"}')
+echo "$LOGIN_RESP" | json_pretty
+TOK_REP=$(echo "$LOGIN_RESP" | jq -r '.accessToken // empty')
+
+echo "Obtained real tokens from auth-service"
 
 # Me (requires JWT)
 echo "--- GET /auth/me (usuario) ---"
@@ -249,6 +254,15 @@ echo "=============================================="
 echo "ORDER SERVICE"
 echo "=============================================="
 
+# Get real restaurant ID for order creation
+REST_LIST=$(curl -sS -X GET "$BASE_URL/restaurants?limit=1&offset=0" -H "x-service-token: $SERVICE_TOKEN")
+REST_ID=$(echo "$REST_LIST" | jq -r '.items[0].id // empty')
+PROD_LIST=$(curl -sS -X GET "$BASE_URL/restaurants/$REST_ID/products" -H "x-service-token: $SERVICE_TOKEN")
+PROD_ID=$(echo "$PROD_LIST" | jq -r '.items[0].id // empty')
+PROD_PRECIO=$(echo "$PROD_LIST" | jq -r '.items[0].precio // "5.00"' | sed 's/[^0-9.]//g')
+
+echo "Testing with restaurant: $REST_ID, product: $PROD_ID (precio: $PROD_PRECIO)"
+
 # GET orders (requires JWT)
 echo "--- GET /orders (usuario) ---"
 request "List orders" \
@@ -262,9 +276,9 @@ ORDER_RESP=$(curl -sS -X POST "$BASE_URL/orders" \
     -H "Authorization: Bearer $TOK_USR" \
     -H "Content-Type: application/json" \
     -H "x-service-token: $SERVICE_TOKEN" \
-    -d '{"restauranteId":"550e8400-e29b-41d4-a716-446655440000","direccionEntrega":"Calle 123","items":[{"productId":"550e8400-e29b-41d4-a716-446655440100","nombre":"Test","precioUnit":10.00,"cantidad":1}]}')
+    -d '{"restauranteId":"'"$REST_ID"'","direccionEntrega":"Calle 123","items":[{"productId":"'"$PROD_ID"'","nombre":"Test","precioUnit":'"$PROD_PRECIO"',"cantidad":1}]}')
 echo "$ORDER_RESP" | json_pretty
-ORDER_ID=$(extract_field "$ORDER_RESP" "id")
+ORDER_ID=$(echo "$ORDER_RESP" | jq -r '.id // empty')
 echo "Order ID: $ORDER_ID"
 
 # GET order by ID

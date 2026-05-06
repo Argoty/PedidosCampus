@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +17,10 @@ interface UserProfile {
     createdAt: string;
 }
 
+interface UserProfileApi extends UserProfile {
+    is_active?: boolean;
+}
+
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +31,7 @@ export default function AdminUsersPage() {
             if (res.ok) {
                 const data = await res.json();
                 const items = Array.isArray(data) ? data : (data.data || data.items || []);
-                setUsers(items.map((u: any) => ({
+                setUsers((items as UserProfileApi[]).map((u) => ({
                     ...u,
                     isActive: u.isActive ?? u.is_active ?? false
                 })));

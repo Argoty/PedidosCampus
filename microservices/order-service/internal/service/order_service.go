@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PedidosCampus/order-service/internal/config"
 	"github.com/PedidosCampus/order-service/internal/dto"
@@ -28,6 +29,16 @@ type orderServiceImpl struct {
 	serviceToken string
 	httpClient   *http.Client
 }
+
+type restauranteDetalleResponse struct {
+	Nombre string `json:"nombre"`
+}
+
+type repartidorDetalleResponse struct {
+	Nombre   string  `json:"nombre"`
+	Telefono *string `json:"telefono"`
+}
+
 
 // NewOrderService creates a new order service
 func NewOrderService(repo repository.OrderRepository, publisher rabbitmq.EventPublisher, deliveryCost float64, cfg *config.Config) OrderService {
@@ -179,14 +190,78 @@ func (s *orderServiceImpl) CreateOrder(ctx context.Context, userID uuid.UUID, re
 		}()
 	}
 
-	// Send notification asynchronously
-	s.sendNotification(
-		createdPedido.UserID,
-		"PEDIDO_CREADO",
-		fmt.Sprintf("Tu pedido en el restaurante %s ha sido creado con exito.", createdPedido.RestauranteID.String()),
-	)
-
 	return createdPedido, nil
+}
+
+func (s *orderServiceImpl) getRestaurantName(ctx context.Context, restauranteID uuid.UUID) string {
+	baseURL := strings.TrimRight(s.cfg.RestService.URL, "/")
+	if baseURL == "" {
+		return ""
+	}
+
+	endpoint := fmt.Sprintf("%s/restaurants/%s", baseURL, restauranteID.String())
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return ""
+	}
+
+	req.Header.Set("x-service-token", s.serviceToken)
+
+	client := &http.Client{Timeout: s.cfg.RestService.Timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	var payload restauranteDetalleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(payload.Nombre)
+}
+
+func (s *orderServiceImpl) getDelivererInfo(ctx context.Context, repartidorID uuid.UUID) (string, string) {
+	baseURL := strings.TrimRight(s.cfg.UserService.URL, "/")
+	if baseURL == "" {
+		return "", ""
+	}
+
+	endpoint := fmt.Sprintf("%s/api/profiles/user/%s", baseURL, repartidorID.String())
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return "", ""
+	}
+
+	req.Header.Set("x-service-token", s.serviceToken)
+
+	client := &http.Client{Timeout: s.cfg.UserService.Timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", ""
+	}
+
+	var payload repartidorDetalleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return "", ""
+	}
+
+	phone := ""
+	if payload.Telefono != nil {
+		phone = strings.TrimSpace(*payload.Telefono)
+	}
+
+	return strings.TrimSpace(payload.Nombre), phone
 }
 
 // validateProductsWithRestaurant validates products with the restaurant service
@@ -392,7 +467,7 @@ func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, r
 			OrderID:      pedido.ID.String(),
 			RepartidorID: repartidorID.String(),
 			Estado:       string(pedido.Estado),
-			Timestamp:    pedido.UpdatedAt.String(),
+			Timestamp:    pedido.UpdatedAt.Format(time.RFC3339),
 		}
 
 		// order.status.changed event
@@ -404,7 +479,7 @@ func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, r
 			ToEstado:   string(pedido.Estado),
 			ChangedBy:  repartidorID.String(),
 			Estado:     string(pedido.Estado),
-			Timestamp:  pedido.UpdatedAt.String(),
+			Timestamp:  pedido.UpdatedAt.Format(time.RFC3339),
 		}
 
 		go func() {
@@ -414,10 +489,24 @@ func (s *orderServiceImpl) AcceptOrder(ctx context.Context, orderID uuid.UUID, r
 	}
 
 	// Notify user about order acceptance
+	restaurantName := s.getRestaurantName(ctx, pedido.RestauranteID)
+	if restaurantName == "" {
+		restaurantName = pedido.RestauranteID.String()
+	}
+
+	delivererName, delivererPhone := s.getDelivererInfo(ctx, repartidorID)
+	if delivererName == "" {
+		delivererName = "un repartidor"
+	}
+	contact := ""
+	if delivererPhone != "" {
+		contact = fmt.Sprintf(" (%s)", delivererPhone)
+	}
+
 	s.sendNotification(
 		pedido.UserID,
 		"PEDIDO_ACEPTADO",
-		fmt.Sprintf("Tu pedido %s ha sido aceptado por un repartidor.", pedido.ID.String()),
+		fmt.Sprintf("Tu pedido de %s fue aceptado por %s%s.", restaurantName, delivererName, contact),
 	)
 
 	return pedido, nil
@@ -459,7 +548,7 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 			ToEstado:   string(updatedPedido.Estado),
 			ChangedBy:  actorID.String(),
 			Estado:     string(updatedPedido.Estado),
-			Timestamp:  updatedPedido.UpdatedAt.String(),
+			Timestamp:  updatedPedido.UpdatedAt.Format(time.RFC3339),
 		}
 
 		go func() {
@@ -474,7 +563,7 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 					UserID:        updatedPedido.UserID.String(),
 					RepartidorID:  actorID.String(),
 					RestauranteID: updatedPedido.RestauranteID.String(),
-					DeliveredAt:   updatedPedido.UpdatedAt.String(),
+					DeliveredAt:   updatedPedido.UpdatedAt.Format(time.RFC3339),
 				}
 				s.publisher.PublishOrderDelivered(context.Background(), deliveredEvent)
 			}
@@ -484,13 +573,17 @@ func (s *orderServiceImpl) UpdateOrderStatus(ctx context.Context, orderID uuid.U
 	// Notify user based on new status
 	if newEstado == model.EstadoEnCamino || newEstado == model.EstadoEntregado {
 		var tipo, mensaje string
+		restaurantName := s.getRestaurantName(ctx, updatedPedido.RestauranteID)
+		if restaurantName == "" {
+			restaurantName = updatedPedido.RestauranteID.String()
+		}
 		switch newEstado {
 		case model.EstadoEnCamino:
 			tipo = "PEDIDO_EN_CAMINO"
-			mensaje = fmt.Sprintf("Tu pedido %s está en camino.", updatedPedido.ID.String())
+			mensaje = fmt.Sprintf("Tu pedido de %s está en camino.", restaurantName)
 		case model.EstadoEntregado:
 			tipo = "PEDIDO_ENTREGADO"
-			mensaje = fmt.Sprintf("Tu pedido %s ha sido entregado. ¡Que disfrutes tu comida!", updatedPedido.ID.String())
+			mensaje = fmt.Sprintf("Tu pedido de %s fue entregado. ¡Que disfrutes tu comida!", restaurantName)
 		}
 		s.sendNotification(updatedPedido.UserID, tipo, mensaje)
 	}

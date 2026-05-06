@@ -31,6 +31,21 @@ interface OrderDetail {
     items: OrderItem[];
     restauranteId: string;
     repartidorId?: string;
+    historial?: OrderHistory[];
+}
+
+interface OrderHistory {
+    id: string;
+    fromEstado?: string | null;
+    toEstado: string;
+    changedBy?: string | null;
+    createdAt: string;
+}
+
+interface RepartidorProfile {
+    id: string;
+    nombre: string;
+    telefono?: string | null;
 }
 
 interface Rating {
@@ -54,31 +69,74 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
     const [existingRestauranteRating, setExistingRestauranteRating] = useState<Rating | null>(null);
     const [existingRepartidorRating, setExistingRepartidorRating] = useState<Rating | null>(null);
+    const [repartidorProfile, setRepartidorProfile] = useState<RepartidorProfile | null>(null);
+    const [historial, setHistorial] = useState<OrderHistory[]>([]);
 
     useEffect(() => {
+        const fetchOrder = async () => {
+            const res = await apiFetch(`/orders/${unwrappedParams.id}`);
+            if (!res.ok) return null;
+            return res.json();
+        };
+
+        const fetchRepartidor = async (repartidorId: string) => {
+            try {
+                const repRes = await apiFetch(`/api/profiles/user/${repartidorId}`);
+                if (repRes.ok) {
+                    const repData = await repRes.json();
+                    setRepartidorProfile(repData);
+                    return;
+                }
+            } catch {
+                // ignore
+            }
+            setRepartidorProfile(null);
+        };
+
+        const fetchRatings = async (userId: string, orderId: string) => {
+            try {
+                const [rRes, dRes] = await Promise.all([
+                    apiFetch(`/ratings/restaurant/user/${userId}?limit=50&offset=0`),
+                    apiFetch(`/ratings/delivery/user/${userId}?limit=50&offset=0`)
+                ]);
+
+                if (rRes.ok) {
+                    const rData = await rRes.json();
+                    const match = (rData.data || []).find((r: Rating) => r.pedido_id === orderId);
+                    setExistingRestauranteRating(match || null);
+                }
+
+                if (dRes.ok) {
+                    const dData = await dRes.json();
+                    const match = (dData.data || []).find((r: Rating) => r.pedido_id === orderId);
+                    setExistingRepartidorRating(match || null);
+                }
+            } catch {
+                setExistingRestauranteRating(null);
+                setExistingRepartidorRating(null);
+            }
+        };
+
         const init = async () => {
             try {
-                const res = await apiFetch(`/orders/${unwrappedParams.id}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setOrder(data);
-                    
-                    // Fetch existing ratings in parallel
-                    if (user?.id) {
-                        try {
-                            const [rRes, dRes] = await Promise.all([
-                                apiFetch(`/ratings/restaurant/user/${user.id}`),
-                                apiFetch(`/ratings/delivery/user/${user.id}`)
-                            ]);
-                            
-                            console.log('Restaurant ratings response:', rRes.ok ? await rRes.json() : 'error');
-                            console.log('Delivery ratings response:', dRes.ok ? await dRes.json() : 'error');
-                            
-                            // Reset and try again
-                        } catch (e) { console.error('Fetch error:', e); }
-                    }
-                } else {
+                const data = await fetchOrder();
+                if (!data) {
                     toast.error('No se pudo cargar el pedido');
+                    return;
+                }
+
+                setOrder(data);
+                const history = (data.historial || []) as OrderHistory[];
+                setHistorial(history.filter((h) => h.toEstado !== 'pendiente'));
+
+                if (data?.repartidorId) {
+                    await fetchRepartidor(data.repartidorId);
+                } else {
+                    setRepartidorProfile(null);
+                }
+
+                if (user?.id) {
+                    await fetchRatings(user.id, data.id);
                 }
             } catch {
                 toast.error('Error de conexión');
@@ -90,6 +148,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }, [unwrappedParams.id, user?.id]);
 
     const submitRatingRestaurante = async () => {
+        if (order?.estado !== 'entregado') {
+            toast.error('Solo puedes calificar cuando el pedido este entregado');
+            return;
+        }
         if (!order?.restauranteId || !ratingRestaurante) return;
         try {
             const res = await apiFetch('/ratings/restaurant', {
@@ -113,6 +175,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     };
 
     const submitRatingRepartidor = async () => {
+        if (order?.estado !== 'entregado') {
+            toast.error('Solo puedes calificar cuando el pedido este entregado');
+            return;
+        }
         if (!order?.repartidorId || !ratingRepartidor) return;
         try {
             const res = await apiFetch('/ratings/delivery', {
@@ -196,20 +262,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Calificar Restaurante</CardTitle>
-                                        <CardDescription>Comparte tu opinión</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex gap-2">
-                                            {[1,2,3,4,5].map(s => (
-                                                <button key={s} onClick={() => setRatingRestaurante(s)} className={`text-2xl ${ratingRestaurante >= s ? 'text-yellow-500' : 'text-gray-300'}`}>★</button>
-                                            ))}
-                                        </div>
-                                        <Input placeholder="Comentario..." value={comentarioRestaurante} onChange={e => setComentarioRestaurante(e.target.value)} />
-                                        <Button onClick={submitRatingRestaurante} disabled={!ratingRestaurante}>Enviar</Button>
-                                    </CardContent>
-                                </Card>
+                                <CardHeader>
+                                    <CardTitle>Calificar Restaurante</CardTitle>
+                                    <CardDescription>Comparte tu opinión</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex gap-2">
+                                        {[1,2,3,4,5].map(s => (
+                                            <button key={s} onClick={() => setRatingRestaurante(s)} className={`text-2xl ${ratingRestaurante >= s ? 'text-yellow-500' : 'text-gray-300'}`}>★</button>
+                                        ))}
+                                    </div>
+                                    <Input placeholder="Comentario..." value={comentarioRestaurante} onChange={e => setComentarioRestaurante(e.target.value)} />
+                                    <Button onClick={submitRatingRestaurante} disabled={!ratingRestaurante || order.estado !== 'entregado'}>Enviar</Button>
+                                </CardContent>
+                            </Card>
                             )}
 
                             {order.repartidorId && (existingRepartidorRating ? (
@@ -226,17 +292,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardHeader><CardTitle>Calificar Repartidor</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex gap-2">
-                                            {[1,2,3,4,5].map(s => (
-                                                <button key={s} onClick={() => setRatingRepartidor(s)} className={`text-2xl ${ratingRepartidor >= s ? 'text-yellow-500' : 'text-gray-300'}`}>★</button>
-                                            ))}
-                                        </div>
-                                        <Input placeholder="Comentario..." value={comentarioRepartidor} onChange={e => setComentarioRepartidor(e.target.value)} />
-                                        <Button onClick={submitRatingRepartidor} disabled={!ratingRepartidor}>Enviar</Button>
-                                    </CardContent>
-                                </Card>
+                                <CardHeader><CardTitle>Calificar Repartidor</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex gap-2">
+                                        {[1,2,3,4,5].map(s => (
+                                            <button key={s} onClick={() => setRatingRepartidor(s)} className={`text-2xl ${ratingRepartidor >= s ? 'text-yellow-500' : 'text-gray-300'}`}>★</button>
+                                        ))}
+                                    </div>
+                                    <Input placeholder="Comentario..." value={comentarioRepartidor} onChange={e => setComentarioRepartidor(e.target.value)} />
+                                    <Button onClick={submitRatingRepartidor} disabled={!ratingRepartidor || order.estado !== 'entregado'}>Enviar</Button>
+                                </CardContent>
+                            </Card>
                             ))}
                         </div>
                     )}
@@ -257,10 +323,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         <CardContent><p className="text-sm">{order.direccionEntrega}</p></CardContent>
                     </Card>
 
+                    {historial.length > 0 && (
+                        <Card>
+                            <CardHeader><CardTitle>Historial</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                {historial.map((h) => (
+                                    <div key={h.id} className="flex items-center justify-between text-sm">
+                                        <div className="font-medium capitalize">{h.toEstado.replace('_', ' ')}</div>
+                                        <div className="text-muted-foreground">
+                                            {new Date(h.createdAt).toLocaleString('es-CO', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {order.repartidorId && (
                         <Card>
                             <CardHeader><CardTitle>Repartidor</CardTitle></CardHeader>
-                            <CardContent><p className="text-sm">ID: {order.repartidorId.slice(0, 8)}</p></CardContent>
+                            <CardContent className="space-y-2">
+                                <p className="text-sm font-medium">
+                                    {repartidorProfile?.nombre || 'Repartidor asignado'}
+                                </p>
+                                {repartidorProfile?.telefono && (
+                                    <p className="text-sm text-muted-foreground">Tel: {repartidorProfile.telefono}</p>
+                                )}
+                                {!repartidorProfile && (
+                                    <p className="text-xs text-muted-foreground">ID: {order.repartidorId.slice(0, 8)}</p>
+                                )}
+                            </CardContent>
                         </Card>
                     )}
 

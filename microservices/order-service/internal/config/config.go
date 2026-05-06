@@ -79,7 +79,7 @@ func LoadConfig() (*Config, error) {
 			QueuePrefix: getEnv("RABBITMQ_QUEUE_PREFIX", "order-service"),
 		},
 		UserService: ServiceConfig{
-			URL:     getEnv("USER_SERVICE_URL", "http://localhost:3001"),
+			URL:     getEnv("USER_SERVICE_URL", "http://localhost:5000"),
 			Timeout: parseDuration(getEnv("USER_SERVICE_TIMEOUT", "5s")),
 		},
 		RestService: ServiceConfig{

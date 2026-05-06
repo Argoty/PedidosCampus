@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -24,11 +24,17 @@ export default function RepartidorOrdersPage() {
     const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         if (!user || !user.id) return;
         try {
+            const resMe = await apiFetch('/auth/me');
+            if (!resMe.ok) {
+                throw new Error('No autorizado');
+            }
+            const me = await resMe.json();
+            const delivererId = me?.id || user.id;
             // Mis pedidos asignados
-            const resAssigned = await apiFetch(`/orders/deliverer/${user.id}?limit=20`);
+            const resAssigned = await apiFetch(`/orders/deliverer/${delivererId}?limit=20`);
             if (resAssigned.ok) {
                 const dataAssigned = await resAssigned.json();
                 setAssignedOrders((dataAssigned.data || []).filter((o: Order) => o.estado !== 'entregado' && o.estado !== 'cancelado'));
@@ -45,13 +51,13 @@ export default function RepartidorOrdersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         if (!authLoading && user?.id) {
             fetchOrders();
         }
-    }, [user?.id, authLoading]);
+    }, [authLoading, fetchOrders, user?.id]);
 
     // Don't render until auth is ready
     if (authLoading) {

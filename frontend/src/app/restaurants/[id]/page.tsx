@@ -2,7 +2,6 @@
 
 import { useEffect, useState, use } from 'react';
 import { apiFetch } from '@/lib/api';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +18,14 @@ interface Product {
     disponible: boolean;
 }
 
+interface CartItem {
+    productId: string;
+    nombre: string;
+    precioUnit: number;
+    cantidad: number;
+    subtotal: number;
+}
+
 interface RestaurantDetail {
     id: string;
     nombre: string;
@@ -29,12 +36,22 @@ interface RestaurantDetail {
     productos: Product[];
 }
 
+interface RestaurantRating {
+    id: string;
+    estrellas: number;
+    comentario?: string | null;
+    created_at: string;
+}
+
 export default function RestaurantDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const unwrappedParams = use(params);
     const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const [cartCount, setCartCount] = useState(0);
+    const [ratings, setRatings] = useState<RestaurantRating[]>([]);
+    const [ratingStats, setRatingStats] = useState<{ average_rating: number; total_ratings: number } | null>(null);
+    const [ratingsLoading, setRatingsLoading] = useState(true);
 
     useEffect(() => {
         const fetchRestaurant = async () => {
@@ -57,7 +74,23 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
             }
         };
 
+        const fetchRatings = async () => {
+            try {
+                const res = await apiFetch(`/ratings/restaurant/restaurant/${unwrappedParams.id}?limit=5&offset=0`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setRatings(data.data || []);
+                    setRatingStats(data.stats || null);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setRatingsLoading(false);
+            }
+        };
+
         fetchRestaurant();
+        fetchRatings();
     }, [unwrappedParams.id]);
 
     const addToCart = (product: Product) => {
@@ -75,21 +108,23 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
         // Very naive local storage cart for now
         try {
             const cartRaw = localStorage.getItem('cart');
-            const cart = cartRaw ? JSON.parse(cartRaw) : { restauranteId: restaurant?.id, items: [] };
+            const typedCart: { restauranteId?: string; items: CartItem[] } = cartRaw
+                ? JSON.parse(cartRaw)
+                : { restauranteId: restaurant?.id, items: [] };
 
-            if (cart.restauranteId !== restaurant?.id && cart.items.length > 0) {
+            if (typedCart.restauranteId !== restaurant?.id && typedCart.items.length > 0) {
                 toast.error('No puedes pedir de distintos restaurantes a la vez. Vacía tu carrito primero.');
                 return;
             }
 
-            cart.restauranteId = restaurant?.id;
-            const existingItem = cart.items.find((i: any) => i.productId === product.id);
+            typedCart.restauranteId = restaurant?.id;
+            const existingItem = typedCart.items.find((i) => i.productId === product.id);
 
             if (existingItem) {
                 existingItem.cantidad += 1;
                 existingItem.subtotal = existingItem.precioUnit * existingItem.cantidad;
             } else {
-                cart.items.push({
+                typedCart.items.push({
                     productId: product.id,
                     nombre: product.nombre,
                     precioUnit: product.precio,
@@ -98,7 +133,7 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
                 });
             }
 
-            localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.setItem('cart', JSON.stringify(typedCart));
             toast.success(`${product.nombre} agregado al carrito`);
 
             // small update for UI
@@ -182,6 +217,51 @@ export default function RestaurantDetailPage({ params }: { params: Promise<{ id:
                                         {p.disponible ? 'Agregar' : 'Agotado'}
                                     </Button>
                                 </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold font-heading">Reseñas</h2>
+                    {ratingStats && (
+                        <div className="text-sm text-muted-foreground">
+                            <span className="font-semibold text-foreground">{ratingStats.average_rating.toFixed(1)}</span> / 5 · {ratingStats.total_ratings} opiniones
+                        </div>
+                    )}
+                </div>
+                {ratingsLoading ? (
+                    <div className="grid gap-3">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                    </div>
+                ) : ratings.length === 0 ? (
+                    <div className="py-10 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                        Aun no hay reseñas para este restaurante.
+                    </div>
+                ) : (
+                    <div className="grid gap-3">
+                        {ratings.map((rating) => (
+                            <Card key={rating.id} className="border-none shadow-sm">
+                                <CardContent className="py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-sm text-muted-foreground">
+                                            {new Date(rating.created_at).toLocaleDateString('es-CO', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                            })}
+                                        </div>
+                                        <Badge variant="secondary" className="bg-secondary/60">
+                                            {rating.estrellas} / 5
+                                        </Badge>
+                                    </div>
+                                    {rating.comentario && (
+                                        <p className="mt-2 text-sm text-foreground/90">{rating.comentario}</p>
+                                    )}
+                                </CardContent>
                             </Card>
                         ))}
                     </div>

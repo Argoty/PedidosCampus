@@ -34,12 +34,14 @@ export default function CartPage() {
         try {
             const data = localStorage.getItem('cart');
             if (data) setCart(JSON.parse(data));
-
-            if (user?.direccion && !direccion) {
-                setDireccion(user.direccion);
-            }
         } catch { }
-    }, [user]);
+    }, []);
+
+    useEffect(() => {
+        if (user?.direccion) {
+            setDireccion(user.direccion);
+        }
+    }, [user?.direccion]);
 
     const updateQuantity = (productId: string, delta: number) => {
         if (!cart) return;

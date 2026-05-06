@@ -9,9 +9,14 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
+interface RepartidorProfile {
+    id: string;
+    disponible: boolean;
+}
+
 export default function RepartidorDashboard() {
-    const { user } = useAuth();
-    const [profile, setProfile] = useState<any>(null);
+    useAuth();
+    const [profile, setProfile] = useState<RepartidorProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {

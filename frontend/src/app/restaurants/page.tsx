@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,11 @@ interface Restaurant {
     categoria: string;
     imagenUrl?: string;
     isActive: boolean;
+}
+
+interface RestaurantApi extends Restaurant {
+    imagen_url?: string;
+    is_active?: boolean;
 }
 
 export default function RestaurantsPage() {
@@ -36,8 +41,8 @@ export default function RestaurantsPage() {
                 if (res.ok) {
                     const data = await res.json();
                     // Normalize and adjust based on the actual API structure
-                    const items = Array.isArray(data) ? data : (data.items || data.data || []);
-                    setRestaurants(items.map((item: any) => ({
+                    const items: RestaurantApi[] = Array.isArray(data) ? (data as RestaurantApi[]) : (data.items || data.data || []);
+                    setRestaurants(items.map((item: RestaurantApi) => ({
                         ...item,
                         isActive: item.isActive ?? item.is_active ?? false,
                         imagenUrl: item.imagenUrl || item.imagen_url

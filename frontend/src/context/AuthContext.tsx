@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAccessToken, setAccessToken, removeAccessToken, setUserRoleCookie, removeUserRoleCookie, getUserRoleCookie } from '../lib/session';
+import { getAccessToken, setAccessToken, removeAccessToken, setUserRoleCookie, removeUserRoleCookie, getUserRoleCookie, getUserIdFromToken, getUserRoleFromToken } from '../lib/session';
 import { apiFetch } from '../lib/api';
 
 export interface User {
@@ -10,13 +10,12 @@ export interface User {
     nombre?: string;
     telefono?: string;
     direccion?: string;
-    [key: string]: any;
 }
 
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (accessToken: string, role: string, userData: any) => void;
+    login: (accessToken: string, role: string, userData: Partial<User>) => void;
     logout: () => void;
 }
 
@@ -56,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 } catch (e) {
                     console.error('Failed to init auth context:', e);
                 }
+            } else if (token && !role) {
+                const tokenRole = getUserRoleFromToken(token);
+                if (tokenRole) {
+                    setUserRoleCookie(tokenRole);
+                    setUser({ id: getUserIdFromToken(token) || 'unknown', role: tokenRole });
+                }
             }
             setIsLoading(false);
         };
@@ -63,10 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initAuth();
     }, []);
 
-    const login = (accessToken: string, role: string, userData: any) => {
+    const login = (accessToken: string, role: string, userData: Partial<User>) => {
         setAccessToken(accessToken);
         setUserRoleCookie(role);
-        setUser({ ...userData, role });
+        const tokenUserId = getUserIdFromToken(accessToken);
+        setUser({ ...userData, role, id: userData?.id || tokenUserId || 'unknown' } as User);
     };
 
     const logout = async () => {

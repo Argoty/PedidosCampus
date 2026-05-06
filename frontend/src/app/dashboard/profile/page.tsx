@@ -4,13 +4,12 @@ import { apiFetch } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { User, useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ProfilePage() {
-    const { user, login } = useAuth();
-    const [profile, setProfile] = useState<User | null>(user);
+    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [telefono, setTelefono] = useState('');
     const [direccion, setDireccion] = useState('');
@@ -48,11 +47,6 @@ export default function ProfilePage() {
                 // Refresh me
                 const meRes = await apiFetch('/api/profiles/me');
                 if (meRes.ok) {
-                    const updated = await meRes.json();
-                    // we need the access token because login requires it, but in our context logic we don't store token in context.
-                    // user already has role, so we just use the existing logic inside AuthContext, but wait, login updates everything.
-                    // Instead of full login, one would ideally have an `updateUser` in context. We can just fake it with login using dummy token.
-                    // Or just reload
                     window.location.reload();
                 }
             } else {

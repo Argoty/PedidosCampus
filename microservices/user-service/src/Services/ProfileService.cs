@@ -197,6 +197,16 @@ public class ProfileService : IProfileService
         return profile != null ? MapToResponse(profile) : null;
     }
 
+    public async Task<UserProfileResponse?> GetProfileByUserIdAsync(Guid userId)
+    {
+        _logger.LogInformation("Getting profile by userId: {UserId}", userId);
+
+        var profile = await _context.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.IsActive);
+
+        return profile != null ? MapToResponse(profile) : null;
+    }
+
     public async Task<UserProfileResponse?> UpdateProfileByIdAsync(Guid profileId, UpdateProfileRequest request)
     {
         _logger.LogInformation("Updating profile by ID (admin): {ProfileId}", profileId);

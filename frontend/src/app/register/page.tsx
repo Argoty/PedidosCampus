@@ -1,13 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -20,6 +21,7 @@ export default function RegisterPage() {
     const [tipo, setTipo] = useState('usuario');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const { login } = useAuth();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,13 +34,18 @@ export default function RegisterPage() {
             });
 
             if (res.ok) {
-                toast.success(`Cuenta creada! Ahora puedes iniciar sesión.`);
-                router.push('/login');
+                const data = await res.json();
+                const userRole = data.user?.role || data.role || tipo;
+                login(data.accessToken, userRole, data.user || { id: data.id, nombre });
+                toast.success('Cuenta creada. ¡Bienvenido!');
+                if (userRole === 'admin') router.push('/admin/orders');
+                else if (userRole === 'repartidor') router.push('/repartidor');
+                else router.push('/restaurants');
             } else {
                 const errData = await res.json().catch(() => null);
                 toast.error(errData?.message || 'Error en el registro');
             }
-        } catch (err) {
+        } catch {
             toast.error('No se pudo conectar al servidor');
         } finally {
             setIsLoading(false);

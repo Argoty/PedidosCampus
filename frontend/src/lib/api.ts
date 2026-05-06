@@ -32,7 +32,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
         options.credentials = 'include';
     }
 
-    let response = await fetch(url, options);
+    const response = await fetch(url, options);
 
     // Auto Refresh Token Interceptor
     if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh')) {

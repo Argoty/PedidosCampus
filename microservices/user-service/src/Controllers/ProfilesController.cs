@@ -211,16 +211,22 @@ public class ProfilesController : ControllerBase
     /// Roles: admin, owner (si userId coincide)
     /// </summary>
     [HttpGet("{profileId:guid}")]
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,usuario,repartidor")]
     public async Task<ActionResult<UserProfileResponse>> GetProfileById(Guid profileId)
     {
-        // TODO: Validar autorización (admin o propietario)
+        // Admin can access any profile. Others only repartidor profiles.
+        var role = User.FindFirst("role")?.Value;
 
         _logger.LogInformation("GET /{ProfileId} - Retrieving profile", profileId);
 
         var profile = await _profileService.GetProfileByIdAsync(profileId);
         if (profile == null)
             return NotFound(new ErrorResponse("NOT_FOUND", "Profile not found"));
+
+        if (role != "admin" && profile.Tipo != "repartidor")
+        {
+            return Forbid();
+        }
 
         return Ok(profile);
     }
@@ -311,6 +317,28 @@ public class ProfilesController : ControllerBase
     }
 
     // ===== Endpoints Internal (Gateway-only) =====
+
+    /// <summary>
+    /// 11.5) Obtener perfil por userId (solo repartidor).
+    /// GET /api/profiles/user/{userId}
+    /// Roles: usuario, repartidor, admin
+    /// </summary>
+    [HttpGet("user/{userId:guid}")]
+    [Authorize(Roles = "admin,usuario,repartidor")]
+    public async Task<ActionResult<UserProfileResponse>> GetProfileByUserId(Guid userId)
+    {
+        _logger.LogInformation("GET /user/{UserId} - Retrieving profile by userId", userId);
+
+        var profile = await _profileService.GetProfileByUserIdAsync(userId);
+        if (profile == null)
+            return NotFound(new ErrorResponse("NOT_FOUND", "Profile not found"));
+
+        var role = User.FindFirst("role")?.Value;
+        if (role != "admin" && profile.Tipo != "repartidor")
+            return Forbid();
+
+        return Ok(profile);
+    }
 
     /// <summary>
     /// 12) Listar repartidores disponibles (internal).

@@ -18,6 +18,11 @@ interface Restaurant {
     isActive: boolean;
 }
 
+interface RestaurantApi extends Restaurant {
+    imagen_url?: string;
+    is_active?: boolean;
+}
+
 export default function AdminRestaurantsPage() {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -30,24 +35,25 @@ export default function AdminRestaurantsPage() {
                 apiFetch('/restaurants?is_active=false')
             ]);
 
-            let activeData = [], inactiveData = [];
+            let activeData: RestaurantApi[] = [];
+            let inactiveData: RestaurantApi[] = [];
             if (activesFetch.ok) {
                 const dataA = await activesFetch.json();
-                activeData = Array.isArray(dataA) ? dataA : (dataA.items || dataA.data || []);
+                activeData = Array.isArray(dataA) ? (dataA as RestaurantApi[]) : (dataA.items || dataA.data || []);
             }
             if (inactivesFetch.ok) {
                 const dataI = await inactivesFetch.json();
-                inactiveData = Array.isArray(dataI) ? dataI : (dataI.items || dataI.data || []);
+                inactiveData = Array.isArray(dataI) ? (dataI as RestaurantApi[]) : (dataI.items || dataI.data || []);
             }
 
-            const normalize = (items: any[]) => items.map(item => ({
+            const normalize = (items: RestaurantApi[]) => items.map(item => ({
                 ...item,
                 isActive: item.isActive ?? item.is_active ?? false,
                 imagenUrl: item.imagenUrl || item.imagen_url
             }));
 
             setRestaurants(normalize([...activeData, ...inactiveData]));
-        } catch (err) {
+        } catch {
             toast.error('Error al cargar restaurantes');
         } finally {
             setLoading(false);

@@ -43,7 +43,7 @@ export default function LoginPage() {
                 const errData = await res.json().catch(() => null);
                 toast.error(errData?.message || 'Error de credenciales');
             }
-        } catch (err) {
+        } catch {
             toast.error('No se pudo conectar al servidor');
         } finally {
             setIsLoading(false);

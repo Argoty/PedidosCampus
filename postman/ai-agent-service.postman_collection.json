@@ -1,0 +1,103 @@
+{
+    "info": {
+        "_postman_id": "aa1c29e1-ca2f-48d6-95af-9e5c3e60aba4",
+        "name": "ai-agent-service",
+        "description": "Pruebas manuales para el agente AI de administración",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{BASE_URL}}/ai/health",
+                    "host": [
+                        "{{BASE_URL}}"
+                    ],
+                    "path": [
+                        "ai",
+                        "health"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Chat Agent",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{ACCESS_TOKEN}}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"message\": \"Hola, ¿cuáles son los pedidos pendientes actuales y los ingresos globales del día por restaurante?\",\n  \"session_id\": \"admin_session_1\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{BASE_URL}}/ai/chat",
+                    "host": [
+                        "{{BASE_URL}}"
+                    ],
+                    "path": [
+                        "ai",
+                        "chat"
+                    ]
+                }
+            },
+            "response": []
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "BASE_URL",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "ACCESS_TOKEN",
+            "value": "your_jwt_admin_token_here",
+            "type": "string"
+        }
+    ]
+}

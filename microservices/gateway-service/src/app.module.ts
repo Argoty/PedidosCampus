@@ -18,7 +18,7 @@ export class AppModule implements NestModule {
     // Función auxiliar para registrar proxies limpios
     const applyProxy = (path: string, targetUrl: string) => {
       if (!targetUrl) return;
-      
+
       consumer
         .apply(
           // Pasar el path como primer argumento para el contexto del proxy
@@ -73,9 +73,12 @@ export class AppModule implements NestModule {
     applyProxy(
       '/notifications',
       process.env.NOTIFICACIONES_SERVICE_URL ||
-        'http://notificaciones-worker.local',
+      'http://notificaciones-worker.local',
     );
     // Ratings: use applyProxy but ensure the service-token header is added
     applyProxy('/ratings', process.env.CALIFICACIONES_SERVICE_URL || 'http://rating-service:8003');
+
+    // AI Agent service proxy
+    applyProxy('/ai', process.env.AI_AGENT_SERVICE_URL || 'http://ai-agent-service:8004');
   }
 }

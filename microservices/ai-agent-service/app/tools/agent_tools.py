@@ -20,16 +20,6 @@ def _get_headers() -> Dict[str, str]:
         headers["Authorization"] = auth_header
     return headers
 
-def _get_user_service_headers() -> Dict[str, str]:
-    headers = {
-        "x-service-token": settings.SERVICE_TOKEN,
-        "X-Client": "gateway",
-    }
-    auth_header = _get_auth_header()
-    if auth_header:
-        headers["Authorization"] = auth_header
-    return headers
-
 @llm.tool
 async def get_active_orders() -> Dict[str, Any]:
     """Consulta los pedidos activos (pendientes) actualmente en el sistema."""
@@ -59,8 +49,8 @@ async def get_available_deliverers() -> Dict[str, Any]:
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             response = await client.get(
-                f"{settings.USER_SERVICE_URL}/api/profiles/delivery?onlyAvailable=true&offset=0&limit={MAX_ITEMS}",
-                headers=_get_user_service_headers()
+                f"{settings.USER_SERVICE_URL}/api/profiles?tipo=repartidor&isActive=true&offset=0&limit={MAX_ITEMS}",
+                headers=_get_headers()
             )
             response.raise_for_status()
             data = response.json()
@@ -68,7 +58,14 @@ async def get_available_deliverers() -> Dict[str, Any]:
             if not isinstance(deliverers, list):
                 deliverers = [deliverers]
             simplified = [
-                {"nombre": d.get("nombre"), "disponible": d.get("disponible")}
+                {
+                    "id": d.get("id"),
+                    "nombre": d.get("nombre"),
+                    "telefono": d.get("telefono"),
+                    "direccion": d.get("direccion"),
+                    "disponible": d.get("disponible"),
+                    "activo": d.get("isActive"),
+                }
                 for d in deliverers[:MAX_ITEMS]
             ]
             total = data.get("total", len(deliverers)) if isinstance(data, dict) else len(deliverers)

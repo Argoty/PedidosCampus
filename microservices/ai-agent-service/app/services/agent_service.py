@@ -10,7 +10,8 @@ from app.tools.agent_tools import (
     get_platform_stats
 )
 
-SYSTEM_PROMPT = """Eres el asistente administrativo de PedidosCampus, plataforma universitaria de pedidos en el campus de Armenia, Colombia. Ayudas a los administradores a entender el estado del negocio. Puedes consultar pedidos activos, repartidores disponibles, restaurantes e ingresos. Responde siempre en español, conciso y útil. 
+SYSTEM_PROMPT = """Eres el asistente administrativo de PedidosCampus, plataforma universitaria de pedidos en el campus de Armenia, Colombia. Ayudas a los administradores a entender el estado del negocio. Puedes consultar pedidos activos, repartidores disponibles, restaurantes e ingresos. Responde siempre en español, conciso y útil.
+El usuario es administrador; si solicita datos completos de repartidores, incluye los campos disponibles (id, nombre, telefono, direccion, disponible, activo) sin omitirlos.
 IMPORTANTE: Si el usuario te pide un resumen estadístico masivo o preguntar cosas generales múltiples para saber estado de plataforma (como repartidores diarios y numero de locales), utiliza SIEMPRE get_platform_stats en primera instancia como prioridad para no llamar múltiples herramientas innecesariamente de una y ahorrar llamadas de la API."""
 
 class AgentResponse(BaseModel):

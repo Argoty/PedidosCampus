@@ -1,19 +1,44 @@
+from contextvars import ContextVar
 import httpx
 from typing import Dict, Any, List
 from mirascope import llm
 from app.config import settings
 
 MAX_ITEMS = 10
+_AUTH_HEADER: ContextVar[str | None] = ContextVar("auth_header", default=None)
+
+def set_auth_header(value: str | None) -> None:
+    _AUTH_HEADER.set(value)
+
+def _get_auth_header() -> str | None:
+    return _AUTH_HEADER.get()
 
 def _get_headers() -> Dict[str, str]:
-    return {"x-service-token": settings.SERVICE_TOKEN}
+    headers = {"x-service-token": settings.SERVICE_TOKEN}
+    auth_header = _get_auth_header()
+    if auth_header:
+        headers["Authorization"] = auth_header
+    return headers
+
+def _get_user_service_headers() -> Dict[str, str]:
+    headers = {
+        "x-service-token": settings.SERVICE_TOKEN,
+        "X-Client": "gateway",
+    }
+    auth_header = _get_auth_header()
+    if auth_header:
+        headers["Authorization"] = auth_header
+    return headers
 
 @llm.tool
 async def get_active_orders() -> Dict[str, Any]:
     """Consulta los pedidos activos (pendientes) actualmente en el sistema."""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            response = await client.get(f"{settings.ORDER_SERVICE_URL}/orders?estado=pendiente", headers=_get_headers())
+            response = await client.get(
+                f"{settings.ORDER_SERVICE_URL}/orders/active?estado=pendiente&limit={MAX_ITEMS}&offset=0",
+                headers=_get_headers()
+            )
             response.raise_for_status()
             data = response.json()
             orders = data.get("data", data) if isinstance(data, dict) else data
@@ -23,7 +48,8 @@ async def get_active_orders() -> Dict[str, Any]:
                 {"id": o.get("id"), "restauranteId": o.get("restauranteId"), "total": o.get("total")}
                 for o in orders[:MAX_ITEMS]
             ]
-            return {"total_pedidos": len(orders), "items": simplified}
+            total = data.get("pagination", {}).get("total", len(orders)) if isinstance(data, dict) else len(orders)
+            return {"total_pedidos": total, "items": simplified}
         except Exception as e:
             return {"error": f"No se pudieron consultar los pedidos activos: {str(e)}"}
 
@@ -32,17 +58,21 @@ async def get_available_deliverers() -> Dict[str, Any]:
     """Consulta los perfiles de los repartidores que están actualmente disponibles."""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            response = await client.get(f"{settings.USER_SERVICE_URL}/users/profiles?tipo=repartidor&disponible=true", headers=_get_headers())
+            response = await client.get(
+                f"{settings.USER_SERVICE_URL}/api/profiles/delivery?onlyAvailable=true&offset=0&limit={MAX_ITEMS}",
+                headers=_get_user_service_headers()
+            )
             response.raise_for_status()
             data = response.json()
-            deliverers = data.get("data", data) if isinstance(data, dict) else data
+            deliverers = data.get("items", data) if isinstance(data, dict) else data
             if not isinstance(deliverers, list):
                 deliverers = [deliverers]
             simplified = [
                 {"nombre": d.get("nombre"), "disponible": d.get("disponible")}
                 for d in deliverers[:MAX_ITEMS]
             ]
-            return {"total_disponibles": len(deliverers), "items": simplified}
+            total = data.get("total", len(deliverers)) if isinstance(data, dict) else len(deliverers)
+            return {"total_disponibles": total, "items": simplified}
         except Exception as e:
              return {"error": f"No se pudieron consultar los repartidores disponibles: {str(e)}"}
 

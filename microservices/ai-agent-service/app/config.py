@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     
     ORDER_SERVICE_URL: str = "http://order-service:8002"
     USER_SERVICE_URL: str = "http://user-service:5000"
-    RESTAURANT_SERVICE_URL: str = "http://restaurant-service:8001/api/v1"
+    RESTAURANT_SERVICE_URL: str = "http://restaurant-service:8001"
     
     PORT: int = 8004
     DEBUG: bool = False

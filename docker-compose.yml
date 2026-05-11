@@ -242,7 +242,7 @@ services:
       SERVICE_TOKEN: ${SERVICE_TOKEN}
       ORDER_SERVICE_URL: http://order-service:8002
       USER_SERVICE_URL: http://user-service:5000
-      RESTAURANT_SERVICE_URL: http://restaurant-service:8001/api/v1
+      RESTAURANT_SERVICE_URL: http://restaurant-service:8001
     ports:
       - "8004:8004"
     restart: unless-stopped

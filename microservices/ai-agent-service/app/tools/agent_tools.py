@@ -5,6 +5,8 @@ from mirascope import llm
 from app.config import settings
 
 MAX_ITEMS = 10
+ORDER_PAGE_SIZE = 50
+MAX_ORDER_PAGES = 4
 _AUTH_HEADER: ContextVar[str | None] = ContextVar("auth_header", default=None)
 
 def set_auth_header(value: str | None) -> None:
@@ -25,6 +27,46 @@ async def _fetch_json(url: str) -> Any:
         response = await client.get(url, headers=_get_headers())
         response.raise_for_status()
         return response.json()
+
+async def _fetch_paged_orders(estado: str) -> tuple[list[Dict[str, Any]], int, bool]:
+    orders: list[Dict[str, Any]] = []
+    total = 0
+    offset = 0
+    page = 0
+
+    while page < MAX_ORDER_PAGES:
+        data = await _fetch_json(
+            f"{settings.ORDER_SERVICE_URL}/orders?estado={estado}&limit={ORDER_PAGE_SIZE}&offset={offset}"
+        )
+        items = data.get("data", data) if isinstance(data, dict) else data
+        if not isinstance(items, list):
+            items = [items]
+        if page == 0:
+            total = data.get("pagination", {}).get("total", len(items)) if isinstance(data, dict) else len(items)
+        if not items:
+            break
+        orders.extend(items)
+        if len(items) < ORDER_PAGE_SIZE:
+            break
+        offset += ORDER_PAGE_SIZE
+        page += 1
+
+    limited = total > 0 and len(orders) < total
+    return orders, total, limited
+
+async def _fetch_profile_names(profile_ids: list[str]) -> Dict[str, str]:
+    names: Dict[str, str] = {}
+    for profile_id in profile_ids:
+        if not profile_id or profile_id in names:
+            continue
+        try:
+            data = await _fetch_json(f"{settings.USER_SERVICE_URL}/api/profiles/{profile_id}")
+            name = data.get("nombre") if isinstance(data, dict) else None
+            if name:
+                names[profile_id] = name
+        except Exception:
+            continue
+    return names
 
 @llm.tool
 async def get_active_orders() -> Dict[str, Any]:
@@ -122,6 +164,66 @@ async def get_revenue_by_restaurant() -> Dict[str, Any]:
         return {"total_restaurantes": len(revenue_map), "items": formatted}
     except Exception as e:
         return {"error": f"Error al calcular los ingresos: {str(e)}"}
+
+@llm.tool
+async def get_delivered_orders() -> Dict[str, Any]:
+    """Lista pedidos entregados con repartidor asignado (limitado)."""
+    try:
+        data = await _fetch_json(
+            f"{settings.ORDER_SERVICE_URL}/orders?estado=entregado&limit={MAX_ITEMS}&offset=0"
+        )
+        orders = data.get("data", data) if isinstance(data, dict) else data
+        if not isinstance(orders, list):
+            orders = [orders]
+
+        deliverer_ids = [str(o.get("repartidorId")) for o in orders if o.get("repartidorId")]
+        names = await _fetch_profile_names(deliverer_ids)
+
+        items = [
+            {
+                "id": o.get("id"),
+                "repartidorId": o.get("repartidorId"),
+                "repartidorNombre": names.get(str(o.get("repartidorId"))),
+                "total": o.get("total"),
+                "estado": o.get("estado"),
+                "creado": o.get("createdAt"),
+            }
+            for o in orders[:MAX_ITEMS]
+        ]
+        total = data.get("pagination", {}).get("total", len(orders)) if isinstance(data, dict) else len(orders)
+        return {"total_entregados": total, "items": items}
+    except Exception as e:
+        return {"error": f"No se pudieron consultar los pedidos entregados: {str(e)}"}
+
+@llm.tool
+async def get_deliverer_stats() -> Dict[str, Any]:
+    """Calcula ingresos y pedidos entregados por repartidor (con limite de paginado)."""
+    try:
+        orders, total_orders, limited = await _fetch_paged_orders("entregado")
+        totals: Dict[str, Dict[str, Any]] = {}
+
+        for order in orders:
+            deliverer_id = str(order.get("repartidorId")) if order.get("repartidorId") else None
+            if not deliverer_id:
+                continue
+            entry = totals.setdefault(deliverer_id, {"repartidorId": deliverer_id, "pedidos": 0, "ingresos": 0.0})
+            entry["pedidos"] += 1
+            entry["ingresos"] += float(order.get("total", 0.0))
+
+        sorted_items = sorted(totals.values(), key=lambda item: item["ingresos"], reverse=True)
+        top_items = sorted_items[:MAX_ITEMS]
+        names = await _fetch_profile_names([item["repartidorId"] for item in top_items])
+        for item in top_items:
+            item["nombre"] = names.get(item["repartidorId"])
+
+        return {
+            "total_repartidores": len(totals),
+            "total_pedidos_entregados": total_orders,
+            "limitado": limited,
+            "items": top_items,
+        }
+    except Exception as e:
+        return {"error": f"No se pudieron calcular ingresos por repartidor: {str(e)}"}
 
 @llm.tool
 async def get_platform_stats() -> Dict[str, Any]:

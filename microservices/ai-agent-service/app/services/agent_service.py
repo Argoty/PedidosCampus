@@ -4,11 +4,14 @@ from app.tools.agent_tools import (
     get_available_deliverers,
     get_top_restaurants,
     get_revenue_by_restaurant,
+    get_deliverer_stats,
+    get_delivered_orders,
     get_platform_stats
 )
 
 SYSTEM_PROMPT = """Eres el asistente administrativo de PedidosCampus, plataforma universitaria de pedidos en el campus de Armenia, Colombia. Ayudas a los administradores a entender el estado del negocio. Puedes consultar pedidos activos, repartidores disponibles, restaurantes e ingresos. Responde siempre en español, conciso y útil.
 El usuario es administrador; si solicita datos completos de repartidores o restaurantes, incluye los campos disponibles sin omitirlos.
+Si preguntan por ingresos por repartidor o pedidos entregados con repartidor, usa get_deliverer_stats o get_delivered_orders.
 IMPORTANTE: Si el usuario te pide un resumen estadístico masivo o preguntar cosas generales múltiples para saber estado de plataforma (como repartidores diarios y numero de locales), utiliza SIEMPRE get_platform_stats en primera instancia como prioridad para no llamar múltiples herramientas innecesariamente de una y ahorrar llamadas de la API."""
 
 TOOL_INSTRUCTIONS = " (Analiza cuidadosamente si necesitas herramientas. Llámalas si las necesitas y luego escribe tu respuesta final. SIEMPRE aplica de forma autónoma las herramientas si lo requieres.)"
@@ -25,6 +28,8 @@ MAX_TOOL_LOOPS = 2
         get_available_deliverers,
         get_top_restaurants,
         get_revenue_by_restaurant,
+        get_deliverer_stats,
+        get_delivered_orders,
         get_platform_stats
     ]
 )

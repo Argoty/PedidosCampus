@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +18,15 @@ export default function AdminAIAgentPage() {
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const sessionIdRef = useRef<string>('');
     const endRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (!sessionIdRef.current) {
+            sessionIdRef.current = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : `admin-${Date.now()}`;
+        }
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
@@ -32,11 +39,29 @@ export default function AdminAIAgentPage() {
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
         setIsTyping(true);
 
-        // Simulated API call just for UI prototype
-        setTimeout(() => {
+        try {
+            const res = await apiFetch('/ai/chat', {
+                method: 'POST',
+                body: JSON.stringify({
+                    message: userMsg,
+                    session_id: sessionIdRef.current,
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const detail = errorData?.detail || 'No se pudo procesar tu solicitud.';
+                setMessages(prev => [...prev, { role: 'agent', content: detail }]);
+                return;
+            }
+
+            const data = await res.json();
+            setMessages(prev => [...prev, { role: 'agent', content: data.response || 'Sin respuesta del agente.' }]);
+        } catch {
+            setMessages(prev => [...prev, { role: 'agent', content: 'Error de red al conectar con el agente.' }]);
+        } finally {
             setIsTyping(false);
-            setMessages(prev => [...prev, { role: 'agent', content: `He analizado tu consulta sobre "${userMsg}". Actualmente el sistema opera con normalidad y el tiempo promedio de entrega es de 14.5 minutos. (Esta es una respuesta simulada prototipo)` }]);
-        }, 1500);
+        }
     };
 
     return (

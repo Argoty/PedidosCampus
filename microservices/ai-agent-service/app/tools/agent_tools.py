@@ -78,18 +78,31 @@ async def get_top_restaurants() -> Dict[str, Any]:
     """Consulta la lista de los restaurantes activos actualmente."""
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            response = await client.get(f"{settings.RESTAURANT_SERVICE_URL}/restaurants", headers=_get_headers())
+            response = await client.get(
+                f"{settings.RESTAURANT_SERVICE_URL}/restaurants?is_active=true&limit={MAX_ITEMS}&offset=0",
+                headers=_get_headers()
+            )
             response.raise_for_status()
             data = response.json()
             items = data.get("items", data) if isinstance(data, dict) else data
             if not isinstance(items, list):
                 items = [items]
-            active_items = [r for r in items if r.get("is_active") is True]
-            simplified = [
-                {"id": r.get("id"), "nombre": r.get("nombre")}
-                for r in active_items[:MAX_ITEMS]
+            full_items = [
+                {
+                    "id": r.get("id"),
+                    "nombre": r.get("nombre"),
+                    "descripcion": r.get("descripcion"),
+                    "direccion": r.get("direccion"),
+                    "categoria": r.get("categoria"),
+                    "imagen_url": r.get("imagen_url") or r.get("imagenUrl"),
+                    "activo": r.get("is_active"),
+                    "creado": r.get("created_at"),
+                    "actualizado": r.get("updated_at"),
+                }
+                for r in items[:MAX_ITEMS]
             ]
-            return {"total_activos": len(active_items), "items": simplified}
+            total = data.get("total", len(items)) if isinstance(data, dict) else len(items)
+            return {"total_activos": total, "items": full_items}
         except Exception as e:
              return {"error": f"No se pudieron consultar los restaurantes: {str(e)}"}
 

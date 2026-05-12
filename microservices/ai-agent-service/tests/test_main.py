@@ -33,7 +33,6 @@ def test_chat_invalid_token():
 async def test_get_revenue_by_restaurant_tool(httpx_mock):
     from app.tools.agent_tools import get_revenue_by_restaurant
     from app.config import settings
-    import json
     
     # Mocking order-service response
     mock_response = [
@@ -48,14 +47,14 @@ async def test_get_revenue_by_restaurant_tool(httpx_mock):
     )
     
     # Execute tool
-    result_str = await get_revenue_by_restaurant()
-    result = json.loads(result_str.replace("'", '"')) # Simple eval conversion
+    result = await get_revenue_by_restaurant()
+    items = result["items"]
     
-    assert len(result) == 2
+    assert len(items) == 2
     
     # Results should be ordered by revenue desc
-    assert result[0]["restauranteId"] == "R2"
-    assert result[0]["ingresos"] == 50.0
+    assert items[0]["restauranteId"] == "R2"
+    assert items[0]["ingresos"] == 50.0
     
-    assert result[1]["restauranteId"] == "R1"
-    assert result[1]["ingresos"] == 25.5
+    assert items[1]["restauranteId"] == "R1"
+    assert items[1]["ingresos"] == 25.5

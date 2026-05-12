@@ -3,7 +3,6 @@ from app.models.schema import ChatRequest, ChatResponse, HealthResponse
 from app.dependencies import verify_service_token
 from app.services.agent_service import process_chat
 from app.tools.agent_tools import set_auth_header
-from app.memory.session_memory import clear_history
 
 router = APIRouter()
 
@@ -18,12 +17,11 @@ async def ai_chat(request: ChatRequest, authorization: str | None = Header(defau
         session_id = request.session_id
 
         # Modo stateless: no usamos historial para evitar saturacion de contexto
-        set_auth_header(authorization)
-        llm_response = await process_chat(request.message, history=None)
-        set_auth_header(None)
-
-        # Limpiar cualquier historial previo de la sesion
-        clear_history(session_id)
+        try:
+            set_auth_header(authorization)
+            llm_response = await process_chat(request.message)
+        finally:
+            set_auth_header(None)
         
         return ChatResponse(
             response=llm_response,

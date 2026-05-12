@@ -1,7 +1,4 @@
-from typing import Any, List, Dict
 from mirascope import llm
-from pydantic import BaseModel
-import asyncio
 from app.tools.agent_tools import (
     get_active_orders,
     get_available_deliverers,
@@ -14,8 +11,8 @@ SYSTEM_PROMPT = """Eres el asistente administrativo de PedidosCampus, plataforma
 El usuario es administrador; si solicita datos completos de repartidores o restaurantes, incluye los campos disponibles sin omitirlos.
 IMPORTANTE: Si el usuario te pide un resumen estadístico masivo o preguntar cosas generales múltiples para saber estado de plataforma (como repartidores diarios y numero de locales), utiliza SIEMPRE get_platform_stats en primera instancia como prioridad para no llamar múltiples herramientas innecesariamente de una y ahorrar llamadas de la API."""
 
-class AgentResponse(BaseModel):
-    response: str
+TOOL_INSTRUCTIONS = " (Analiza cuidadosamente si necesitas herramientas. Llámalas si las necesitas y luego escribe tu respuesta final. SIEMPRE aplica de forma autónoma las herramientas si lo requieres.)"
+MAX_TOOL_LOOPS = 2
     
 # Utilizamos gemini-flash-lite-latest por menor costo y cuota
 @llm.call(
@@ -31,25 +28,19 @@ class AgentResponse(BaseModel):
         get_platform_stats
     ]
 )
-async def admin_assistant_agent(query: str, history: List[Dict[str, Any]]) -> str:
+async def admin_assistant_agent(query: str) -> str:
     return f"""
     SYSTEM: {SYSTEM_PROMPT}
-
-    === HISTORIAL Y RESULTADOS DE HERRAMIENTAS ({len(history)} items) ===
-    {history}
-    ===================
 
     USER: {query}
     """
 
-async def process_chat(query: str, history: List[Dict[str, Any]] | None) -> str:
-    # History es opcional; si no hay, trabajamos en modo stateless
-    history = history or []
-    current_query = query + " \n\n (Analiza cuidadosamente si necesitas herramientas. Llámalas si las necesitas y luego escribe tu respuesta final. SIEMPRE aplica de forma autónoma las herramientas si lo requieres.)"
+async def process_chat(query: str) -> str:
+    current_query = query + " \n\n" + TOOL_INSTRUCTIONS
     
-    response = await admin_assistant_agent(current_query, history)
+    response = await admin_assistant_agent(current_query)
     loops = 0
-    while response.tool_calls and loops < 2:
+    while response.tool_calls and loops < MAX_TOOL_LOOPS:
         loops += 1
         tool_outputs = await response.execute_tools()
         response = await response.resume(tool_outputs)

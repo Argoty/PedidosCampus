@@ -14,7 +14,7 @@ interface ChatMessage {
 
 export default function AdminAIAgentPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([
-        { role: 'agent', content: 'Hola administrador. Soy tu asistente de Inteligencia Artificial para PedidosCampus. ¿En qué te puedo ayudar hoy? Puedo analizar métricas, identificar usuarios problemáticos o sugerir optimizaciones.' }
+        { role: 'agent', content: 'Hola admin. Puedo ayudarte con pedidos, repartidores, restaurantes, menus y estadisticas de la plataforma.' }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);

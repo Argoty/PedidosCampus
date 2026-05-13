@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.api.dependencies import require_admin_role
-from app.services.restaurant_service import ProductoService
+from app.services.producto_service import ProductoService
 from app.schemas.restaurant import (
     ProductoCreate,
     ProductoUpdate,
@@ -18,7 +18,7 @@ router = APIRouter(tags=["Productos"])
 
 
 @router.post(
-    "/restaurants/{restaurante_id}/products",
+    "/{restaurante_id}/products",
     response_model=ProductoResponse,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin_role)],
@@ -41,7 +41,7 @@ async def crear_producto(
     return producto
 
 
-@router.get("/restaurants/{restaurante_id}/products", response_model=dict)
+@router.get("/{restaurante_id}/products", response_model=dict)
 async def listar_productos(
     restaurante_id: UUID,
     disponible: Optional[bool] = Query(None),

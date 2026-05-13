@@ -52,7 +52,7 @@ internal/
 ├── middleware/
 │   ├── jwt.go                    ← validates JWT signature (no auth), extracts userId/role/sub
 │   └── error_handling.go         ← centralized error response formatter
-├── handler/order_handler.go      ← HTTP handlers (9 endpoints)
+├── handler/order_handler.go      ← HTTP handlers (10 endpoints)
 ├── service/order_service.go      ← business logic + RabbitMQ event publishing
 ├── repository/
 │   ├── interfaces.go             ← OrderRepository contract
@@ -67,6 +67,20 @@ internal/
 3. `db.AutoMigrate(Pedido, PedidoItem, PedidoEstadoLog)` on startup (no manual migrations needed)
 4. `NewGORMOrderRepository(db)` → `NewOrderService(repo, publisher, cost)` → `NewOrderHandler(service)`
 5. Gin routes injected with handler
+
+**Endpoints (10 total):**
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| POST | `/orders` | usuario | Create order |
+| GET | `/orders` | usuario/admin | List orders (own/all) |
+| GET | `/orders/:orderId` | owner/repartidor/admin | Get order details |
+| GET | `/orders/:orderId/history` | owner/repartidor/admin | Get order history |
+| POST | `/orders/:orderId/accept` | repartidor | Accept order |
+| POST | `/orders/:orderId/status` | repartidor/admin | Update status |
+| POST | `/orders/:orderId/cancel` | usuario/admin | Cancel order |
+| GET | `/orders/active` | admin | List active orders |
+| GET | `/orders/available` | repartidor/admin | List available orders |
+| GET | `/orders/deliverer/:repartidorId` | repartidor/admin | List deliverer orders |
 
 ---
 
@@ -217,7 +231,7 @@ See `internal/service/order_service.go` for event construction.
 | `cmd/api/main.go` | Entry point: config, DB, RabbitMQ, Gin setup |
 | `internal/config/config.go` | Load .env, validate, connect DB |
 | `internal/middleware/jwt.go` | JWT validation & role checks |
-| `internal/handler/order_handler.go` | 9 HTTP endpoints |
+| `internal/handler/order_handler.go` | 10 HTTP endpoints |
 | `internal/service/order_service.go` | Business logic + event publish |
 | `internal/service/order_service_test.go` | Unit tests (MockRepository) |
 | `internal/repository/gorm_repository.go` | GORM + transactions |

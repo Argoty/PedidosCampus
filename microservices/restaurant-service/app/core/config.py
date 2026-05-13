@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = False
+    SERVICE_TOKEN: str = ""  # Optional, for inter-service communication
 
     class Config:
         env_file = ".env"

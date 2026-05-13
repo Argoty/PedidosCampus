@@ -2,14 +2,20 @@
 
 ## Overview
 
-Servicio de calificaciones para restaurantes y repartidores. CRUD operations con búsquedas por usuario, restaurante, repartidor.
+Servicio de calificaciones para restaurantes y repartidores. CRUD operaciones con búsquedas por usuario, restaurante, repartidor.
 
 Puerto: **8003**
 Base URL: `http://localhost:8003`
 
+### Swagger UI
+Disponible en: `GET /swagger-ui`
+OpenAPI JSON: `GET /api-docs/openapi.json`
+
 ## Autenticación
 
-Header requerido en todos endpoints (excepto health):
+**Nota:** El código actual genera `user_id` aleatorio con `Uuid::new_v4()` (mock). Futuro: extraer del JWT.
+
+Header opcional por ahora:
 ```
 Authorization: Bearer <JWT_TOKEN>
 ```
@@ -28,7 +34,7 @@ HTTP Status codes:
 - **400** — Bad Request (validación fallida)
 - **401** — Unauthorized (falta JWT)
 - **404** — Not Found
-- **409** — Conflict (ej: duplicate rating)
+- **409** — Conflict (duplicate rating)
 - **500** — Internal Server Error
 
 ## Health Check
@@ -52,29 +58,32 @@ Crear calificación para un restaurante.
 **Request:**
 ```json
 {
-  "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-  "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+  "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+  "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
   "estrellas": 5,
   "comentario": "Excelente comida"
 }
 ```
 
+**Nota:** Solo `restaurante_id` es necesario. `repartidor_id` puede ser null o omitido.
+
 **Validaciones:**
 - `estrellas`: 1-5
 - `comentario`: max 500 caracteres
-- `pedidoId` + `userId` (del JWT) debe ser unique
+- `pedido_id` + `user_id` debe ser único (constraint UNIQUE en DB)
 
 **Response 201:**
 ```json
 {
   "id": "750e8400-e29b-41d4-a716-446655440002",
-  "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-  "userId": "user-uuid-from-jwt",
-  "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+  "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "450e8400-e29b-41d4-a716-446655440099",
+  "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
+  "repartidor_id": null,
   "estrellas": 5,
   "comentario": "Excelente comida",
-  "createdAt": "2024-04-25T10:30:00Z",
-  "updatedAt": "2024-04-25T10:30:00Z"
+  "created_at": "2026-05-04T10:30:00+00:00",
+  "updated_at": "2026-05-04T10:30:00+00:00"
 }
 ```
 
@@ -93,13 +102,14 @@ Obtener calificación por ID.
 ```json
 {
   "id": "750e8400-e29b-41d4-a716-446655440002",
-  "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-  "userId": "user-uuid-from-jwt",
-  "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+  "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "450e8400-e29b-41d4-a716-446655440099",
+  "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
+  "repartidor_id": null,
   "estrellas": 5,
   "comentario": "Excelente comida",
-  "createdAt": "2024-04-25T10:30:00Z",
-  "updatedAt": "2024-04-25T10:30:00Z"
+  "created_at": "2026-05-04T10:30:00+00:00",
+  "updated_at": "2026-05-04T10:30:00+00:00"
 }
 ```
 
@@ -112,13 +122,11 @@ Obtener calificación por ID.
 ```
 
 ### GET /ratings/restaurant/user/:userId
-Listar todas las calificaciones del usuario actual (extraído del JWT).
+Listar todas las calificaciones de un usuario.
 
 Query params (opcionales):
 - `limit`: max 50 (default 10)
 - `offset`: default 0
-- `sort`: "createdAt" (default) | "estrellas"
-- `order`: "asc" | "desc" (default)
 
 **Response 200:**
 ```json
@@ -126,13 +134,14 @@ Query params (opcionales):
   "data": [
     {
       "id": "750e8400-e29b-41d4-a716-446655440002",
-      "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-      "userId": "user-uuid-from-jwt",
-      "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+      "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "450e8400-e29b-41d4-a716-446655440099",
+      "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
+      "repartidor_id": null,
       "estrellas": 5,
       "comentario": "Excelente comida",
-      "createdAt": "2024-04-25T10:30:00Z",
-      "updatedAt": "2024-04-25T10:30:00Z"
+      "created_at": "2026-05-04T10:30:00+00:00",
+      "updated_at": "2026-05-04T10:30:00+00:00"
     }
   ],
   "pagination": {
@@ -156,13 +165,14 @@ Query params:
   "data": [
     {
       "id": "750e8400-e29b-41d4-a716-446655440002",
-      "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-      "userId": "user-uuid-from-jwt",
-      "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+      "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "450e8400-e29b-41d4-a716-446655440099",
+      "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
+      "repartidor_id": null,
       "estrellas": 5,
       "comentario": "Excelente comida",
-      "createdAt": "2024-04-25T10:30:00Z",
-      "updatedAt": "2024-04-25T10:30:00Z"
+      "created_at": "2026-05-04T10:30:00+00:00",
+      "updated_at": "2026-05-04T10:30:00+00:00"
     }
   ],
   "pagination": {
@@ -185,7 +195,7 @@ Query params:
 ```
 
 ### PATCH /ratings/restaurant/:id
-Actualizar calificación (solo autor o admin).
+Actualizar calificación.
 
 **Request:**
 ```json
@@ -199,18 +209,19 @@ Actualizar calificación (solo autor o admin).
 ```json
 {
   "id": "750e8400-e29b-41d4-a716-446655440002",
-  "pedidoId": "550e8400-e29b-41d4-a716-446655440000",
-  "userId": "user-uuid-from-jwt",
-  "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
+  "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "450e8400-e29b-41d4-a716-446655440099",
+  "restaurante_id": "650e8400-e29b-41d4-a716-446655440001",
+  "repartidor_id": null,
   "estrellas": 4,
   "comentario": "Actualizado: la comida fue buena",
-  "createdAt": "2024-04-25T10:30:00Z",
-  "updatedAt": "2024-04-25T10:35:00Z"
+  "created_at": "2026-05-04T10:30:00+00:00",
+  "updated_at": "2026-05-04T10:35:00+00:00"
 }
 ```
 
 ### DELETE /ratings/restaurant/:id
-Eliminar calificación (solo autor o admin).
+Eliminar calificación.
 
 **Response 204:** (No Content)
 
@@ -224,41 +235,38 @@ Eliminar calificación (solo autor o admin).
 
 ## Calificaciones Repartidor
 
-Mismo patrón que Restaurante, pero en endpoints `/ratings/delivery/*`:
+### POST /ratings/delivery
+Crear calificación para un repartidor.
 
-- `POST /ratings/delivery`
+**Request:**
+```json
+{
+  "pedido_id": "550e8400-e29b-41d4-a716-446655440000",
+  "repartidor_id": "850e8400-e29b-41d4-a716-446655440003",
+  "estrellas": 5,
+  "comentario": "Llegó rápido"
+}
+```
+
+**Nota:** Solo `repartidor_id` es necesario. `restaurante_id` puede ser null o omitido.
+
+Mismo patrón de endpoints:
 - `GET /ratings/delivery/:id`
 - `GET /ratings/delivery/user/:userId`
 - `GET /ratings/delivery/delivery/:repartidorId`
 - `PATCH /ratings/delivery/:id`
 - `DELETE /ratings/delivery/:id`
 
-Request/Response identical excepto `restauranteId` → `repartidorId`.
-
-**GET /ratings/delivery/delivery/:repartidorId** retorna `stats` igual que restaurantes:
-```json
-{
-  "average_rating": 4.8,
-  "total_ratings": 120,
-  "distribution": {
-    "5": 105,
-    "4": 12,
-    "3": 3,
-    "2": 0,
-    "1": 0
-  }
-}
-```
+**GET /ratings/delivery/delivery/:repartidorId** retorna lista con stats.
 
 ## Estadísticas
 
 ### GET /ratings/stats/restaurant/:restauranteId
-Obtener estadísticas agregadas de calificaciones del restaurante.
+Obtener estadísticas agregadas del restaurante.
 
 **Response 200:**
 ```json
 {
-  "restauranteId": "650e8400-e29b-41d4-a716-446655440001",
   "average_rating": 4.7,
   "total_ratings": 42,
   "distribution": {
@@ -272,12 +280,11 @@ Obtener estadísticas agregadas de calificaciones del restaurante.
 ```
 
 ### GET /ratings/stats/delivery/:repartidorId
-Obtener estadísticas agregadas de calificaciones del repartidor.
+Obtener estadísticas agregadas del repartidor.
 
 **Response 200:**
 ```json
 {
-  "repartidorId": "850e8400-e29b-41d4-a716-446655440003",
   "average_rating": 4.8,
   "total_ratings": 120,
   "distribution": {
@@ -290,14 +297,52 @@ Obtener estadísticas agregadas de calificaciones del repartidor.
 }
 ```
 
+## Schema Reference
+
+### Tablas DB
+
+**calificaciones_restaurante:**
+- `id` UUID PK
+- `pedido_id` UUID NOT NULL
+- `user_id` UUID NOT NULL
+- `restaurante_id` UUID NOT NULL
+- `estrellas` INT NOT NULL (1-5)
+- `comentario` VARCHAR(500)
+- `created_at` TIMESTAMP
+- `updated_at` TIMESTAMP
+- UNIQUE(pedido_id, user_id)
+
+**calificaciones_repartidor:**
+- `id` UUID PK
+- `pedido_id` UUID NOT NULL
+- `user_id` UUID NOT NULL
+- `repartidor_id` UUID NOT NULL
+- `estrellas` INT NOT NULL (1-5)
+- `comentario` VARCHAR(500)
+- `created_at` TIMESTAMP
+- `updated_at` TIMESTAMP
+- UNIQUE(pedido_id, user_id)
+
+**pedidos_entregados:**
+- `id` UUID PK
+- `pedido_id` UUID NOT NULL UNIQUE
+- `user_id` UUID NOT NULL
+- `repartidor_id` UUID NOT NULL
+- `restaurante_id` UUID NOT NULL
+- `delivered_at` TIMESTAMP
+- `created_at` TIMESTAMP
+
+Índices en: `restaurante_id`, `repartidor_id`, `user_id`, `pedido_id`.
+
 ## Rate Limiting
 
-No implementado aún. Futuro: 100 requests/minuto por usuario.
+No implementado aún.
 
 ## Notas de Implementación
 
-- Todas las fechas en ISO 8601 (UTC)
+- Fechas en ISO 8601 (UTC)
 - UUIDs como strings
-- Soft deletes NO (deletes físicos)
-- Índices en `restauranteId`, `repartidorId`, `userId` para queries rápidas
-- Constraint único: `(pedidoId, userId)` per tabla (evita duplicados)
+- Deletes físicos (no soft delete)
+- user_id generado con `Uuid::new_v4()` (mock - futuro: extraer de JWT)
+- Swagger/OpenAPI generado automáticamente con utoipa
+- RabbitMQ consumer para eventos `order.delivered` (opcional)

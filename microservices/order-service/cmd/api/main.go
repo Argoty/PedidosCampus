@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/PedidosCampus/order-service/internal/config"
 	"github.com/PedidosCampus/order-service/internal/handler"
@@ -63,7 +62,7 @@ func main() {
 
 	// Initialize layers
 	orderRepo := repository.NewGORMOrderRepository(db)
-	orderService := service.NewOrderService(orderRepo, publisher, cfg.DeliveryCost)
+	orderService := service.NewOrderService(orderRepo, publisher, cfg.DeliveryCost, cfg)
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	// Setup Gin engine
@@ -80,13 +79,6 @@ func main() {
 	// Middleware
 	engine.Use(gin.Recovery())
 	engine.Use(middleware.ErrorHandlingMiddleware())
-	engine.Use(func(c *gin.Context) {
-		if c.Request.Method != "OPTIONS" && c.GetHeader("x-service-token") != os.Getenv("SERVICE_TOKEN") {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
-			return
-		}
-		c.Next()
-	})
 
 	// Routes without authentication
 	health := engine.Group("/health")
@@ -95,6 +87,21 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		})
 	}
+
+	// Service token middleware (applies to everything except /health)
+	engine.Use(func(c *gin.Context) {
+		// Skip token check for health and OPTIONS
+		if c.Request.URL.Path == "/health" || c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		// Use cfg.ServiceToken which was loaded at startup, not os.Getenv which may not work correctly
+		if c.GetHeader("x-service-token") != cfg.ServiceToken {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+			return
+		}
+		c.Next()
+	})
 
 	// Protected routes (require JWT)
 	protected := engine.Group("/orders")
@@ -123,6 +130,9 @@ func main() {
 
 		// List active orders (admin only)
 		protected.GET("/active", middleware.RequireRole("admin"), orderHandler.ListActiveOrders)
+
+		// List available orders (for repartidor)
+		protected.GET("/available", middleware.RequireRole("repartidor", "admin"), orderHandler.ListAvailableOrders)
 
 		// List deliverer orders
 		protected.GET("/deliverer/:repartidorId", orderHandler.ListDelivererOrders)

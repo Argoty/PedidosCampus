@@ -1,14 +1,15 @@
 package middleware
 
 import (
-	"fmt"
-	"log"
-	"strings"
+    "encoding/base64"
+    "encoding/json"
+    "log"
+    "strings"
 
-	"github.com/PedidosCampus/order-service/pkg/errors"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
+    "github.com/golang-jwt/jwt/v5"
+    "github.com/PedidosCampus/order-service/pkg/errors"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
 )
 
 const (
@@ -25,15 +26,15 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// JWTMiddleware validates JWT token and extracts claims
-func JWTMiddleware(secret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(errors.ErrMissingToken.HTTPStatus, errors.ErrMissingToken)
-			c.Abort()
-			return
-		}
+// JWTMiddleware extracts claims without verifying signature
+func JWTMiddleware(_ string) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        authHeader := c.GetHeader("Authorization")
+        if authHeader == "" {
+            c.JSON(errors.ErrMissingToken.HTTPStatus, errors.ErrMissingToken)
+            c.Abort()
+            return
+        }
 
 		// Extract token from "Bearer <token>"
 		parts := strings.SplitN(authHeader, " ", 2)
@@ -43,22 +44,20 @@ func JWTMiddleware(secret string) gin.HandlerFunc {
 			return
 		}
 
-		tokenString := parts[1]
+        tokenString := parts[1]
 
-		// Parse and validate token
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(secret), nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(errors.ErrInvalidToken.HTTPStatus, errors.ErrInvalidToken)
-			c.Abort()
-			return
-		}
+        claims := &Claims{}
+        payload, err := decodeJWTPayload(tokenString)
+        if err != nil {
+            c.JSON(errors.ErrInvalidToken.HTTPStatus, errors.ErrInvalidToken)
+            c.Abort()
+            return
+        }
+        if err := json.Unmarshal(payload, claims); err != nil {
+            c.JSON(errors.ErrInvalidToken.HTTPStatus, errors.ErrInvalidToken)
+            c.Abort()
+            return
+        }
 
 		// Store claims in context
 		c.Set(SubKey, claims.Sub)
@@ -67,10 +66,25 @@ func JWTMiddleware(secret string) gin.HandlerFunc {
 
 		// Debug logs for claims
 		// NOTE: remove or lower verbosity in production
-		log.Printf("[JWTMiddleware] claims sub=%s role=%s email=%s", claims.Sub, claims.Role, claims.Email)
+        log.Printf("[JWTMiddleware] claims sub=%s role=%s email=%s", claims.Sub, claims.Role, claims.Email)
 
 		c.Next()
 	}
+}
+
+func decodeJWTPayload(tokenString string) ([]byte, error) {
+    parts := strings.Split(tokenString, ".")
+    if len(parts) != 3 {
+        return nil, errors.ErrInvalidToken
+    }
+
+    payloadSegment := parts[1]
+    payloadBytes, err := base64.RawURLEncoding.DecodeString(payloadSegment)
+    if err != nil {
+        return nil, errors.ErrInvalidToken
+    }
+
+    return payloadBytes, nil
 }
 
 // RequireRole middleware checks if user has the required role

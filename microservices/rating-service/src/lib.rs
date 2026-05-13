@@ -1,11 +1,14 @@
 pub mod app;
 pub mod config;
+pub mod delivered_order_repo;
+pub mod delivered_order_service;
 pub mod delivery_handler;
 pub mod delivery_repository;
 pub mod delivery_service;
 pub mod dto;
 pub mod errors;
 pub mod models;
+pub mod rabbitmq;
 pub mod restaurant_handler;
 pub mod restaurant_repository;
 pub mod restaurant_service;

@@ -9,10 +9,13 @@ import * as jwt from 'jsonwebtoken';
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   // Rutas públicas que el Gateway dejará pasar sin requerir JWT
+  // (solo验证 service-token en el proxy, no JWT de usuario)
   private readonly publicRoutes = [
     '/auth/login',
     '/auth/register',
     '/auth/refresh',
+    // Inter-service endpoints (usan x-service-token, no JWT usuario)
+    '/restaurants/products/validate-batch',
   ];
 
   use(req: Request, res: Response, next: NextFunction) {

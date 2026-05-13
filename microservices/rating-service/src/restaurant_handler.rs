@@ -3,16 +3,14 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use axum::http::HeaderMap;
 use serde::Deserialize;
 use uuid::Uuid;
-use utoipa::Path as UtoipaPath;
 use crate::{
     dto::{CreateRatingRequest, UpdateRatingRequest, RatingResponse, ListRatingsResponse, PaginationInfo, StatsInfo, DistributionInfo},
     errors::Result,
     models::RestaurantRating,
-    restaurant_service::RestaurantRatingService,
     state::AppState,
-    restaurant_repository::RestaurantRatingRepository,
 };
 
 #[derive(Debug, Deserialize)]
@@ -34,17 +32,23 @@ pub struct ListQuery {
 )]
 pub async fn create_restaurant_rating(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<CreateRatingRequest>,
 ) -> Result<(StatusCode, Json<RatingResponse>)> {
     let restaurante_id = payload.restaurante_id.ok_or_else(|| crate::errors::AppError::ValidationError("restaurante_id required".to_string()))?;
     
-    // Extract user_id from JWT (mock for now)
-    let user_id = Uuid::new_v4();
+    // Extract user_id from x-user-id header (injected by gateway from JWT)
+    // Fall back to generating a UUID only if header is missing (for backwards compatibility)
+    let user_id = headers
+        .get("x-user-id")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .unwrap_or_else(|| {
+            tracing::warn!("No x-user-id header found, generating random UUID (backwards compatibility)");
+            Uuid::new_v4()
+        });
 
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let rating = service
+    let rating = state.restaurant_service
         .create(payload.pedido_id, restaurante_id, user_id, payload.estrellas, payload.comentario)
         .await?;
 
@@ -67,10 +71,7 @@ pub async fn get_restaurant_rating(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<RatingResponse>> {
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let rating = service.get_by_id(id).await?;
+    let rating = state.restaurant_service.get_by_id(id).await?;
 
     Ok(Json(rating_to_response(&rating, Some(rating.restaurante_id), None)))
 }
@@ -96,10 +97,7 @@ pub async fn get_user_restaurant_ratings(
     let limit = q.limit.unwrap_or(10);
     let offset = q.offset.unwrap_or(0);
 
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let (ratings, total) = service.get_by_user(user_id, limit, offset).await?;
+    let (ratings, total) = state.restaurant_service.get_by_user(user_id, limit, offset).await?;
 
     let data = ratings
         .iter()
@@ -134,11 +132,8 @@ pub async fn get_restaurant_ratings(
     let limit = q.limit.unwrap_or(10);
     let offset = q.offset.unwrap_or(0);
 
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let (ratings, total) = service.get_by_restaurant(restaurante_id, limit, offset).await?;
-    let (avg_rating, total_count, dist) = service.get_stats(restaurante_id).await?;
+    let (ratings, total) = state.restaurant_service.get_by_restaurant(restaurante_id, limit, offset).await?;
+    let (avg_rating, total_count, dist) = state.restaurant_service.get_stats(restaurante_id).await?;
 
     let data = ratings
         .iter()
@@ -180,10 +175,7 @@ pub async fn update_restaurant_rating(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateRatingRequest>,
 ) -> Result<Json<RatingResponse>> {
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let rating = service.update(id, payload.estrellas, payload.comentario).await?;
+    let rating = state.restaurant_service.update(id, payload.estrellas, payload.comentario).await?;
 
     Ok(Json(rating_to_response(&rating, Some(rating.restaurante_id), None)))
 }
@@ -204,10 +196,7 @@ pub async fn delete_restaurant_rating(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    service.delete(id).await?;
+    state.restaurant_service.delete(id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -227,10 +216,7 @@ pub async fn get_restaurant_stats(
     State(state): State<AppState>,
     Path(restaurante_id): Path<Uuid>,
 ) -> Result<Json<StatsInfo>> {
-    let repo = RestaurantRatingRepository::new(state.db.clone());
-    let service = RestaurantRatingService::new(repo);
-
-    let (avg_rating, total_count, dist) = service.get_stats(restaurante_id).await?;
+    let (avg_rating, total_count, dist) = state.restaurant_service.get_stats(restaurante_id).await?;
 
     Ok(Json(StatsInfo {
         average_rating: avg_rating,

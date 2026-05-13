@@ -3,6 +3,7 @@ use uuid::Uuid;
 use crate::errors::{AppError, Result};
 use crate::models::RestaurantRating;
 
+#[derive(Clone)]
 pub struct RestaurantRatingRepository {
     pool: PgPool,
 }

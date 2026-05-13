@@ -16,6 +16,7 @@ describe('AuthService', () => {
     authUser: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      delete: jest.fn(),
     },
     refreshToken: {
       create: jest.fn(),
@@ -33,6 +34,13 @@ describe('AuthService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     authService = new AuthService(prismaMock, jwtServiceMock);
+    
+    // Mock global fetch para User Service calls
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: jest.fn().mockResolvedValue({ success: true }),
+    });
   });
 
   it('debe registrar un usuario y retornar access + refresh opaco', async () => {
@@ -66,7 +74,7 @@ describe('AuthService', () => {
     expect(result.refreshToken).toBeDefined();
     expect(result.refreshToken.split('.').length).toBe(1);
     expect(prismaMock.refreshToken.create).toHaveBeenCalledTimes(1);
-  });
+  });;
 
   it('debe fallar si el correo ya existe', async () => {
     prismaMock.authUser.findUnique = jest.fn().mockResolvedValue({ id: 'exists' });

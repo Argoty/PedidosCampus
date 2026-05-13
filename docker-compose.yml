@@ -132,8 +132,9 @@ services:
       DATABASE_LOG_LEVEL: info
       SERVICE_TOKEN: ${SERVICE_TOKEN}
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
+      RESTAURANT_SERVICE_URL: http://restaurant-service:8001
       JWT_SECRET: ${ACCESS_TOKEN_SECRET}
-      RABBITMQ_URL: ""
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_EXCHANGE: orders
       RABBITMQ_QUEUE_PREFIX: order-service
       DELIVERY_COST: 2
@@ -141,6 +142,8 @@ services:
       LOG_FORMAT: json
     depends_on:
       order-db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     ports:
       - "8002:8002"
@@ -172,11 +175,34 @@ services:
       PORT: 8003
       RUST_LOG: info
       DATABASE_URL: postgresql://rating_user:${RATING_DB_PASSWORD:-rating_password}@rating-db:5432/rating_db?sslmode=disable
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: orders
+      RABBITMQ_QUEUE: rating-service
     depends_on:
       rating-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8003:8003"
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pedidoscampus-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   gateway-service:
@@ -194,6 +220,7 @@ services:
       ORDER_SERVICE_URL: http://order-service:8002
       CALIFICACIONES_SERVICE_URL: http://rating-service:8003
       NOTIFICACIONES_SERVICE_URL: ${NOTIFICACIONES_SERVICE_URL:-https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev}
+      AI_AGENT_SERVICE_URL: http://ai-agent-service:8004
     ports:
       - "3000:3000"
     depends_on:
@@ -201,6 +228,23 @@ services:
       - user-service
       - restaurant-service
       - order-service
+      - ai-agent-service
+    restart: unless-stopped
+
+  ai-agent-service:
+    container_name: pedidoscampus-ai-agent-service
+    build:
+      context: ./microservices/ai-agent-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8004
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      ORDER_SERVICE_URL: http://order-service:8002
+      USER_SERVICE_URL: http://user-service:5000
+      RESTAURANT_SERVICE_URL: http://restaurant-service:8001
+    ports:
+      - "8004:8004"
     restart: unless-stopped
 
 volumes:
@@ -209,3 +253,4 @@ volumes:
   restaurant_postgres_data:
   order_postgres_data:
   rating_postgres_data:
+  rabbitmq_data:

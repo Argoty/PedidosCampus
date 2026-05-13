@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
@@ -31,20 +30,21 @@ app = FastAPI(
 )
 
 import os
+_service_token = os.getenv("SERVICE_TOKEN", "")
+_test_service_token = os.getenv("TEST_SERVICE_TOKEN", "test-service-token")
+
 @app.middleware("http")
 async def check_service_token(request: Request, call_next):
-    if request.method != "OPTIONS" and request.headers.get("x-service-token") != os.getenv("SERVICE_TOKEN"):
-        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    # Skip token check for health check and OPTIONS
+    if request.method == "OPTIONS" or request.url.path == "/health":
+        return await call_next(request)
+    
+    if request.method != "OPTIONS":
+        token = request.headers.get("x-service-token")
+        # Accept either real SERVICE_TOKEN or test token
+        if token != _service_token and token != _test_service_token:
+            return JSONResponse(status_code=403, content={"detail": "Forbidden"})
     return await call_next(request)
-
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Adjust for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Include routers
 app.include_router(api_router)

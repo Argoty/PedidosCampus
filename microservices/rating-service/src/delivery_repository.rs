@@ -3,6 +3,7 @@ use uuid::Uuid;
 use crate::errors::{AppError, Result};
 use crate::models::DeliveryRating;
 
+#[derive(Clone)]
 pub struct DeliveryRatingRepository {
     pool: PgPool,
 }

@@ -18,14 +18,22 @@ export class AppModule implements NestModule {
     // Función auxiliar para registrar proxies limpios
     const applyProxy = (path: string, targetUrl: string) => {
       if (!targetUrl) return;
+
       consumer
         .apply(
-          createProxyMiddleware({
+          // Pasar el path como primer argumento para el contexto del proxy
+          createProxyMiddleware(path, {
             target: targetUrl,
             changeOrigin: true,
             onProxyReq: (proxyReq, req: any, res) => {
               // Inyectar secret en la petición que va a la red interna docker
               proxyReq.setHeader('x-service-token', serviceTokenEnv);
+
+              // Inyectar userId del JWT decodificado para servicios que lo necesiten
+              // El middleware ya validó el JWT y guardó el resultado en req['user']
+              if (req['user'] && req['user'].sub) {
+                proxyReq.setHeader('x-user-id', req['user'].sub);
+              }
 
               // FIX para http-proxy-middleware vs NestJS body-parser
               // NestJS consume el request body antes de que llegue al proxy.
@@ -56,7 +64,7 @@ export class AppModule implements NestModule {
     );
     applyProxy(
       '/restaurants',
-      process.env.RESTAURANT_SERVICE_URL || 'http://restaurant-service:8001',
+      process.env.RESTAURANT_SERVICE_URL || 'http://restaurant-service:8001/api/v1',
     );
     applyProxy(
       '/orders',
@@ -65,8 +73,12 @@ export class AppModule implements NestModule {
     applyProxy(
       '/notifications',
       process.env.NOTIFICACIONES_SERVICE_URL ||
-        'http://notificaciones-worker.local',
+      'http://notificaciones-worker.local',
     );
-    applyProxy('/ratings', process.env.CALIFICACIONES_SERVICE_URL || '');
+    // Ratings: use applyProxy but ensure the service-token header is added
+    applyProxy('/ratings', process.env.CALIFICACIONES_SERVICE_URL || 'http://rating-service:8003');
+
+    // AI Agent service proxy
+    applyProxy('/ai', process.env.AI_AGENT_SERVICE_URL || 'http://ai-agent-service:8004');
   }
 }

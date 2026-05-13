@@ -39,6 +39,9 @@ public interface IProfileService
     /// <summary>Obtener perfil por ID (admin o propietario)</summary>
     Task<UserProfileResponse?> GetProfileByIdAsync(Guid profileId);
 
+    /// <summary>Obtener perfil por userId</summary>
+    Task<UserProfileResponse?> GetProfileByUserIdAsync(Guid userId);
+
     /// <summary>Actualizar perfil por ID (admin)</summary>
     Task<UserProfileResponse?> UpdateProfileByIdAsync(Guid profileId, UpdateProfileRequest request);
 

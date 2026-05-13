@@ -14,14 +14,16 @@ import (
 
 // Config holds application configuration
 type Config struct {
-	Server       ServerConfig
-	Database     DatabaseConfig
-	JWT          JWTConfig
-	RabbitMQ     RabbitMQConfig
-	UserService  ServiceConfig
-	RestService  ServiceConfig
-	DeliveryCost float64
-	LogLevel     string
+	Server        ServerConfig
+	Database      DatabaseConfig
+	JWT           JWTConfig
+	RabbitMQ      RabbitMQConfig
+	UserService   ServiceConfig
+	RestService   ServiceConfig
+	NotifService  ServiceConfig
+	ServiceToken  string
+	DeliveryCost  float64
+	LogLevel      string
 }
 
 // ServerConfig holds server configuration
@@ -77,13 +79,18 @@ func LoadConfig() (*Config, error) {
 			QueuePrefix: getEnv("RABBITMQ_QUEUE_PREFIX", "order-service"),
 		},
 		UserService: ServiceConfig{
-			URL:     getEnv("USER_SERVICE_URL", "http://localhost:3001"),
+			URL:     getEnv("USER_SERVICE_URL", "http://localhost:5000"),
 			Timeout: parseDuration(getEnv("USER_SERVICE_TIMEOUT", "5s")),
 		},
 		RestService: ServiceConfig{
 			URL:     getEnv("RESTAURANT_SERVICE_URL", "http://localhost:3002"),
 			Timeout: parseDuration(getEnv("RESTAURANT_SERVICE_TIMEOUT", "5s")),
 		},
+NotifService: ServiceConfig{
+			URL:     getEnv("NOTIFICACIONES_SERVICE_URL", "http://localhost:8787"),
+			Timeout: parseDuration(getEnv("NOTIFICACIONES_SERVICE_TIMEOUT", "5s")),
+		},
+		ServiceToken: getEnv("SERVICE_TOKEN", ""),
 		DeliveryCost: getEnvFloat("DELIVERY_COST", 200),
 		LogLevel:     getEnv("LOG_LEVEL", "info"),
 	}

@@ -1,144 +1,129 @@
 # User Service — API
 
-Servicio de perfiles de usuario y repartidor. Contiene CRUD de perfiles, gestión de disponibilidad y listados para admin.
+## Descripción
+Servicio de gestión de perfiles de usuario y repartidor. CRUD, disponibilidad y listados para administración.
 
-Autenticación
-- Endpoints protegidos requieren JWT. Roles: `usuario`, `repartidor`, `admin`.
+## Autenticación
+Todos los endpoints requieren JWT válido. Roles disponibles: `usuario`, `repartidor`, `admin`.
+Endpoints internos (delivery, search, reserve, release) requieren header `X-Client: gateway`.
 
-Nota de despliegue / acceso
-- Todos los endpoints marcados como "internal" o de administración deben ser accesibles únicamente a través del API Gateway. Aunque el Gateway aún no esté implementado en la primera entrega, la API debe exigir un scope/claim específico (por ejemplo: `x-client: gateway`) o validación de origen para denotar llamadas internas.
+## Modelo de Dominio
 
-ORM y persistencia
-- Este servicio usará Entity Framework Core como ORM sobre PostgreSQL. El modelo debe mapear la entidad UserProfile y exponer migraciones y DbContext apropiadas.
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| Id | GUID | Identificador único del perfil |
+| UserId | GUID | Referencia a Auth Service (NO expuesto en responses) |
+| Tipo | string | "usuario" o "repartidor" |
+| Nombre | string | Nombre completo |
+| Telefono | string? | Teléfono de contacto |
+| Direccion | string? | Dirección |
+| Disponible | bool | Disponibilidad del repartidor |
+| IsActive | bool | Perfil activo (soft delete) |
+| ReservedUntil | DateTime? | Reserva atómica (TTL) |
+| CreatedAt | DateTime | Fecha de creación |
+| UpdatedAt | DateTime | Fecha de actualización |
 
-Modelos (resumen)
-- UserProfile: id, userId (ref Auth, NO exponer en endpoints públicos), tipo (usuario|repartidor), nombre, telefono, direccion, disponible, isActive, reservedUntil, createdAt, updatedAt
+## DTOs
 
-Schemas (resumen para OpenAPI)
-- UserProfile
-  - id: GUID
-  - userId: GUID (referencia interna a Auth, NO exponer en endpoints públicos)
-  - tipo: enum ("usuario","repartidor")
-  - nombre: string
-  - telefono: string
-  - direccion: string
-  - disponible: boolean
-  - isActive: boolean
-  - reservedUntil: datetime? (nullable) — usado para reserva atomica
-  - createdAt: datetime
-  - updatedAt: datetime
+### Request DTOs
 
--- DTOs
-- CreateProfileRequest: { tipo, nombre, telefono?, direccion? }
-- UpdateProfileRequest: campos parciales editables
-- AvailabilityRequest: { disponible: true|false }
-- ReserveRequest: { ttlSeconds?: number }
-- ErrorResponse: { code, message, details? }
+```json
+// CreateProfileRequest
+{ "tipo": "usuario"|"repartidor", "nombre": "string", "telefono": "string?", "direccion": "string?" }
 
-Endpoints HTTP
+// UpdateProfileRequest
+{ "nombre": "string?", "telefono": "string?", "direccion": "string?" }
 
-1) Obtener perfil propio
-- GET /profiles/me
-- Roles: usuario, repartidor
-- Respuesta: perfil asociado al userId del JWT
+// AvailabilityRequest
+{ "disponible": true|false }
 
-2) Crear/Registrar perfil
-- POST /profiles
-- Roles: autenticado (para completar perfil después de registrar en Auth)
-- Body: CreateProfileRequest
-- Server genera userId vinculándolo con JWT subject
-- Respuesta: 201 Created
+// ReserveRequest
+{ "ttlSeconds": number? }
+```
 
-3) Actualizar perfil
-- PATCH /profiles/me
-- Body: UpdateProfileRequest
-- Respuesta: 200 con perfil actualizado
+### Response DTOs
 
-4) Cambiar disponibilidad (repartidor)
-- POST /profiles/me/availability
-- Body: AvailabilityRequest
-- Roles: repartidor
-- Efecto:
-  - actualizar campo disponible
-  - publicar evento `repartidor.availability.changed` con { profileId, userId, disponible, timestamp }
-- Respuesta: 200
+```json
+// UserProfileResponse
+{ "id": "guid", "tipo": "string", "nombre": "string", "telefono": "string?", "direccion": "string?", "disponible": bool, "isActive": bool, "createdAt": "datetime", "updatedAt": "datetime" }
 
-5) Listar repartidores disponibles
-- GET /profiles/delivery?limit=&offset=&near=&radius=&onlyAvailable=true
-- Roles: internal (ACCESIBLE SOLO A TRAVÉS DEL GATEWAY). No exponer directamente al frontend hasta que el Gateway aplique controles.
-- Filtros: onlyAvailable=true, near=lat,lon, radius (metros), limit, offset
-- Respuesta: PaginatedResponse[UserProfile] con perfiles de tipo repartidor y disponible=true
+// AvailabilityResponse
+{ "disponible": bool, "reservedUntil": "datetime?" }
 
-6) Admin: listar/activar/desactivar usuarios
-- GET /profiles?tipo=&isActive=&limit=&offset=
-- POST /profiles/{profileId}/deactivate
-- POST /profiles/{profileId}/activate
-- Roles: admin
+// ReserveResponse
+{ "reservedUntil": "datetime" }
 
-7) Obtener perfil por id
-- GET /profiles/{profileId}
-- Roles: admin OR owner (si el JWT subject coincide con userId) — ADMIN or internal via Gateway
-- Respuesta: 200 con UserProfile (campos públicos) o 404
+// PaginatedResponse<T>
+{ "data": T[], "total": number, "offset": number, "limit": number }
 
-8) Eliminar / Borrar perfil (admin)
-- DELETE /profiles/{profileId}
-- Roles: admin
-- Efecto: eliminar físicamente o marcar isActive=false (decidir implementacion). Respuesta: 204
+// ErrorResponse
+{ "code": "string", "message": "string", "details": object? }
+```
 
-9) Admin: actualizar perfil parcial
-- PATCH /profiles/{profileId}
-- Roles: admin
-- Body: campos parciales
-- Respuesta: 200
+## Endpoints HTTP
 
-10) Búsqueda avanzada (internal)
-- GET /profiles/search?tipo=&disponible=&near=&radius=&limit=&offset=
-- Roles: internal
-- Respuesta: PaginatedResponse[UserProfile]
+### Endpoints de Usuario
 
-11) Reserva atómica (internal) — para evitar race conditions al asignar repartidores
-- POST /profiles/{profileId}/reserve
-- Roles: internal (API Gateway / order-service)
-- Body: ReserveRequest { ttlSeconds?: number }
-- Comportamiento: intenta marcar reservedUntil = now + ttlSeconds ATÓMICAMENTE, solo si disponible=true y (reservedUntil IS NULL OR reservedUntil <= now)
-- Respuestas: 200 OK con { reservedUntil } si éxito, 409 Conflict si ya reservado/indisponible
+| # | Método | Ruta | Roles | Descripción |
+|---|--------|------|------|-------------|
+| 1 | GET | /api/profiles/me | usuario, repartidor, admin | Obtener perfil propio |
+| 2 | POST | /api/profiles | usuario, repartidor, admin | Crear nuevo perfil |
+| 3 | PATCH | /api/profiles/me | usuario, repartidor, admin | Actualizar perfil propio |
+| 4 | POST | /api/profiles/me/availability | repartidor | Cambiar disponibilidad |
+| 5 | GET | /api/profiles/me/availability | repartidor | Obtener disponibilidad |
 
-12) Liberar reserva (internal)
-- POST /profiles/{profileId}/release
-- Roles: internal
-- Efecto: clear reservedUntil si el caller es el que reservó o si es admin
-- Respuesta: 200
+### Endpoints de Administración
 
-13) Obtener disponibilidad (opcional)
-- GET /profiles/me/availability
-- Roles: repartidor
-- Respuesta: { disponible, reservedUntil }
+| # | Método | Ruta | Roles | Descripción |
+|---|--------|------|------|-------------|
+| 6 | GET | /api/profiles | admin | Listar perfiles (filtros: tipo, isActive, limit, offset) |
+| 7 | GET | /api/profiles/{profileId} | admin | Obtener perfil por ID |
+| 8 | PATCH | /api/profiles/{profileId} | admin | Actualizar perfil por ID |
+| 9 | POST | /api/profiles/{profileId}/deactivate | admin | Desactivar perfil |
+| 10 | POST | /api/profiles/{profileId}/activate | admin | Activar perfil |
+| 11 | DELETE | /api/profiles/{profileId} | admin | Eliminar perfil permanentemente |
 
-Integración con order-service
-- Escenarios:
-  - order-service consulta lista de repartidores disponibles (GET /profiles/delivery?onlyAvailable=true)
-  - order-service notifica asignación; user-service puede actualizar disponibilidad a false si se desea reservar
-  - order-service y otros consumen eventos `repartidor.availability.changed`
-- Nota: en este proyecto, GET /profiles/delivery y los endpoints de reserva son INTERNAL y deben ser invocados a través del API Gateway que autenticará y añadirá el claim/scope que identifica llamadas internas.
+### Endpoints Internos (X-Client: gateway)
 
-Eventos RabbitMQ
-- repartidor.availability.changed — body: { profileId, userId, disponible, timestamp }
-- profile.created — { profileId, userId, tipo, timestamp }
-- profile.updated — { profileId, changes, timestamp }
-- profile.deactivated — { profileId, reason?, timestamp }
-- profile.reserved — { profileId, reservedBy?, reservedUntil, timestamp }
-- profile.released — { profileId, releasedBy?, timestamp }
+| # | Método | Ruta | Descripción |
+|---|--------|------|-------------|
+| 12 | GET | /api/profiles/delivery | Listar repartidores disponibles |
+| 13 | GET | /api/profiles/search | Búsqueda avanzada (filtros: tipo, disponible) |
+| 14 | POST | /api/profiles/{profileId}/reserve | Reserva atómica (TTL) |
+| 15 | POST | /api/profiles/{profileId}/release | Liberar reserva |
 
-Buenas prácticas
-- Evitar carrera de condición al asignar repartidor: cuando un repartidor acepta, order-service debe validar disponibilidad y publicar evento; user-service ofrece endpoint atomic reserve para coordinación segura.
-- Indexar por userId (único), tipo y disponible (ya en schema).
-- No exponer userId de Auth en respuestas públicas si no es necesario; usar id de perfil internamente.
+## Códigos de Error HTTP
 
-Notas de implementación con EF Core
-- Usar una migración inicial que cree la tabla UserProfiles con índices en (userId UNIQUE), (tipo), (disponible), (reservedUntil). Implementar la reserva atómica usando una transacción SQL que actualice reservedUntil con WHERE disponible=true AND (reservedUntil IS NULL OR reservedUntil <= now) — devolver filas afectadas para determinar éxito.
-- El DbContext debe exponer métodos para: GetByUserId, ReserveProfileAtomic, ReleaseReservation, SetAvailability, AdminList, SearchWithGeo (si se implementa geo simple usando extensión PostGIS o cálculo Haversine en query si latitude/longitude guardados).
+| Código | Descripción |
+|--------|-------------|
+| 200 | OK |
+| 201 | Created |
+| 204 | No Content |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 409 | Conflict |
+| 500 | Internal Server Error |
 
-Errores y códigos HTTP
-- 200,201,204,400,401,403,404,409,500
+## Integración con order-service
+
+El order-service consume los siguientes endpoints internos:
+- GET /api/profiles/delivery?onlyAvailable=true → Lista repartidores disponibles
+- POST /api/profiles/{profileId}/reserve → Reserva atómica para evitar race conditions
+- POST /api/profiles/{profileId}/release → Libera reserva
+
+## Eventos RabbitMQ (pendientes)
+
+| Evento | Payload |
+|--------|---------|
+| repartidor.availability.changed | { profileId, userId, disponible, timestamp } |
+| profile.created | { profileId, userId, tipo, timestamp } |
+| profile.updated | { profileId, changes, timestamp } |
+| profile.deactivated | { profileId, reason?, timestamp } |
+| profile.reserved | { profileId, reservedBy?, reservedUntil, timestamp } |
+| profile.released | { profileId, releasedBy?, timestamp } |
 
 ---
+
+**Última actualización:** Mayo 2026

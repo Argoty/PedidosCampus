@@ -10,54 +10,54 @@ import (
 
 // Event types
 type OrderCreatedEvent struct {
-	EventID       string  `json:"eventId"`
-	EventType     string  `json:"eventType"`
-	OrderID       string  `json:"orderId"`
-	UserID        string  `json:"userId"`
-	RestauranteID string  `json:"restauranteId"`
+	EventID       string  `json:"event_id"`
+	EventType     string  `json:"event_type"`
+	OrderID       string  `json:"order_id"`
+	UserID        string  `json:"user_id"`
+	RestauranteID string  `json:"restaurante_id"`
 	Subtotal      float64 `json:"subtotal"`
-	CostoEntrega  float64 `json:"costoEntrega"`
+	CostoEntrega  float64 `json:"costo_entrega"`
 	Total         float64 `json:"total"`
 	Estado        string  `json:"estado"`
-	CreatedAt     string  `json:"createdAt"`
+	CreatedAt     string  `json:"created_at"`
 }
 
 type OrderAssignedEvent struct {
-	EventID      string `json:"eventId"`
-	EventType    string `json:"eventType"`
-	OrderID      string `json:"orderId"`
-	RepartidorID string `json:"repartidorId"`
+	EventID      string `json:"event_id"`
+	EventType    string `json:"event_type"`
+	OrderID      string `json:"order_id"`
+	RepartidorID string `json:"repartidor_id"`
 	Estado       string `json:"estado"`
 	Timestamp    string `json:"timestamp"`
 }
 
 type OrderStatusChangedEvent struct {
-	EventID    string `json:"eventId"`
-	EventType  string `json:"eventType"`
-	OrderID    string `json:"orderId"`
-	FromEstado string `json:"fromEstado"`
-	ToEstado   string `json:"toEstado"`
-	ChangedBy  string `json:"changedBy"`
+	EventID    string `json:"event_id"`
+	EventType  string `json:"event_type"`
+	OrderID    string `json:"order_id"`
+	FromEstado string `json:"from_estado"`
+	ToEstado   string `json:"to_estado"`
+	ChangedBy  string `json:"changed_by"`
 	Estado     string `json:"estado"`
 	Timestamp  string `json:"timestamp"`
 }
 
 type OrderDeliveredEvent struct {
-	EventID       string `json:"eventId"`
-	EventType     string `json:"eventType"`
-	OrderID       string `json:"orderId"`
-	UserID        string `json:"userId"`
-	RepartidorID  string `json:"repartidorId"`
-	RestauranteID string `json:"restauranteId"`
-	DeliveredAt   string `json:"deliveredAt"`
+	EventID       string `json:"event_id"`
+	EventType     string `json:"event_type"`
+	OrderID       string `json:"order_id"`
+	UserID        string `json:"user_id"`
+	RepartidorID  string `json:"repartidor_id"`
+	RestauranteID string `json:"restaurante_id"`
+	DeliveredAt   string `json:"delivered_at"`
 }
 
 type OrderCancelledEvent struct {
-	EventID      string `json:"eventId"`
-	EventType    string `json:"eventType"`
-	OrderID      string `json:"orderId"`
-	CancelledBy  string `json:"cancelledBy"`
-	RevertedFrom string `json:"revertedFrom"`
+	EventID      string `json:"event_id"`
+	EventType    string `json:"event_type"`
+	OrderID      string `json:"order_id"`
+	CancelledBy  string `json:"cancelled_by"`
+	RevertedFrom string `json:"reverted_from"`
 }
 
 // EventPublisher defines methods to publish events

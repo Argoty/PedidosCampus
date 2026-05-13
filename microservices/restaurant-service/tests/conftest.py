@@ -47,14 +47,16 @@ async def db_session():
 
 @pytest.fixture
 async def client(db_session):
-    """Create test client with overridden database dependency."""
+    """Create test client with overridden database dependency and service token."""
 
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as test_client:
+    # Create client with service token header for all requests
+    headers = {"x-service-token": "test-service-token"}
+    async with AsyncClient(app=app, base_url="http://test", headers=headers) as test_client:
         yield test_client
 
     app.dependency_overrides.clear()

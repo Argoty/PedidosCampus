@@ -34,6 +34,17 @@ pub struct RatingStats {
     pub distribution: RatingDistribution,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ToSchema)]
+pub struct DeliveredOrder {
+    pub id: Uuid,
+    pub pedido_id: Uuid,
+    pub user_id: Uuid,
+    pub repartidor_id: Uuid,
+    pub restaurante_id: Uuid,
+    pub delivered_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct RatingDistribution {
     #[serde(rename = "5")]

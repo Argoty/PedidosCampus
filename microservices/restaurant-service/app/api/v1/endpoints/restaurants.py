@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.api.dependencies import require_admin_role, require_auth
-from app.services.restaurant_service import RestauranteService
+from app.services.restaurante_service import RestauranteService
 from app.schemas.restaurant import (
     RestauranteCreate,
     RestauranteUpdate,
@@ -14,7 +14,7 @@ from app.schemas.restaurant import (
     RestauranteDetalle,
 )
 
-router = APIRouter(prefix="/restaurants", tags=["Restaurantes"])
+router = APIRouter(tags=["Restaurantes"])
 
 
 @router.post(

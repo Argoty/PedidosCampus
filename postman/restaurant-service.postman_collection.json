@@ -1,0 +1,514 @@
+{
+  "info": {
+    "_postman_id": "restaurant-service-collection",
+    "name": "PedidosCampus - Restaurant Service",
+    "description": "PedidosCampus Restaurant Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:3000)\n   - ADMIN_TOKEN: [JWT with role: admin]\n   - PUBLIC_TOKEN: [JWT for public endpoints]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002\n- Public User ID: 550e8400-e29b-41d4-a716-446655440000\n\n**Port in Docker:** 8001\n**Database:** PostgreSQL (restaurant_db)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzA3MDAwMDAsImV4cCI6MTc4ODQwMDAwMH0.admin_token_signature",
+      "type": "string"
+    },
+    {
+      "key": "PUBLIC_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJyb2xlIjoidXN1YXJpbyIsImlhdCI6MTczMDcwMDAwMCwiZXhwIjoxNzg4NDAwMDAwfQ.public_token_signature",
+      "type": "string"
+    },
+    {
+      "key": "restaurante_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "producto_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/docs",
+              "host": ["{{BASE_URL}}"],
+              "path": ["docs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurantes - Public Operations",
+      "item": [
+        {
+          "name": "1. List Restaurants (Public, with filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants?categoria=&is_active=true&q=&limit=50&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get Restaurant Detail (Public, with menu)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}?include_unavailable=false",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}"],
+              "query": [
+                {
+                  "key": "include_unavailable",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurantes - Admin Operations",
+      "item": [
+        {
+          "name": "1. Create Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"La Pizzería del Barrio\",\n  \"descripcion\": \"Auténtica pizzería italiana con ingredientes frescos\",\n  \"categoria\": \"pizza\",\n  \"telefono\": \"+34912345678\",\n  \"email\": \"info@lapizzeria.es\",\n  \"direccion\": \"Calle Principal 42, Madrid\",\n  \"horario_apertura\": \"11:00\",\n  \"horario_cierre\": \"23:00\",\n  \"imagen_url\": \"https://example.com/pizzeria.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
+            }
+          }
+        },
+        {
+          "name": "2. Update Restaurant (Admin only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"La Pizzería del Barrio - Actualizado\",\n  \"descripcion\": \"Auténtica pizzería italiana con ingredientes frescos y horno de leña\",\n  \"horario_apertura\": \"10:00\",\n  \"horario_cierre\": \"00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants", "{{restaurante_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3. Activate Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/activate",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Deactivate Restaurant (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/deactivate",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "deactivate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Public Operations",
+      "item": [
+        {
+          "name": "1. List Products by Restaurant (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products?disponible=true&limit=100&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "disponible",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get Product Detail (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Admin Operations",
+      "item": [
+        {
+          "name": "1. Create Product (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizza Margherita\",\n  \"descripcion\": \"Clásica pizza italiana con tomate, mozzarella y albahaca\",\n  \"precio\": 12.99,\n  \"categoria\": \"pizza\",\n  \"imagen_url\": \"https://example.com/margherita.jpg\",\n  \"disponible\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/{{restaurante_id}}/products",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurante_id}}",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Update Product (Admin only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizza Margherita Premium\",\n  \"precio\": 14.99,\n  \"disponible\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3. Delete Product (Admin only - soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/{{producto_id}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "{{producto_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Batch Operations (Internal)",
+      "item": [
+        {
+          "name": "1. Validate Products Batch (Order Service Integration)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"producto_id\": \"{{producto_id}}\",\n      \"cantidad\": 2,\n      \"precio_unit\": 12.99\n    },\n    {\n      \"producto_id\": \"<otro_producto_id>\",\n      \"cantidad\": 1,\n      \"precio_unitario\": 8.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/validate-batch",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "products", "validate-batch"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Cases - Testing",
+      "item": [
+        {
+          "name": "❌ Unauthorized - No Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
+            }
+          }
+        },
+        {
+          "name": "❌ Forbidden - Public user trying to create (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Unauthorized Restaurant\",\n  \"descripcion\": \"This should fail\",\n  \"categoria\": \"pizza\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "restaurants"]
+            }
+          }
+        },
+        {
+          "name": "❌ Not Found - Invalid Restaurant ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/restaurants/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          }
+        },
+        {
+          "name": "❌ Not Found - Invalid Product ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PUBLIC_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/products/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 Reference",
+      "item": [
+        {
+          "name": "Response Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/openapi.json",
+              "host": ["{{BASE_URL}}"],
+              "path": ["openapi.json"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

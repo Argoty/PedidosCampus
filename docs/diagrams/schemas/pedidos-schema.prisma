@@ -1,0 +1,75 @@
+// Microservicio: Pedidos (PostgreSQL)
+// Alcance: pedidos, items, estados e historial.
+// Nota: userId, repartidorId, restauranteId y productId son referencias lógicas a otros microservicios (sin FK cruzadas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PEDIDOS_DATABASE_URL")
+}
+
+enum EstadoPedido {
+  pendiente
+  aceptado
+  en_camino
+  entregado
+}
+
+model Pedido {
+  id            String          @id @default(uuid()) @db.Uuid
+  userId        String          @db.Uuid // referencia lógica a Auth/Usuarios
+  restauranteId String          @db.Uuid // referencia lógica a Restaurantes
+  repartidorId  String?         @db.Uuid // referencia lógica a Usuarios (tipo repartidor)
+  //direccionEntrega String
+  estado        EstadoPedido    @default(pendiente)
+  subtotal      Decimal         @db.Decimal(10, 2)
+  costoEntrega  Decimal         @default(0) @db.Decimal(10, 2)
+  total         Decimal         @db.Decimal(10, 2)
+  direccionEntrega String?       // dirección donde se entregará el pedido
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  items         PedidoItem[]
+  historial     PedidoEstadoLog[]
+
+  @@index([userId])
+  @@index([restauranteId])
+  @@index([repartidorId])
+  @@index([estado])
+  @@map("pedidos")
+}
+
+model PedidoItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  pedidoId     String   @db.Uuid
+  productId    String   @db.Uuid // referencia lógica a Producto de Restaurantes
+  nombre       String
+  precioUnit   Decimal  @db.Decimal(10, 2)
+  cantidad     Int
+  subtotal     Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId])
+  @@index([productId])
+  @@map("pedido_items")
+}
+
+model PedidoEstadoLog {
+  id          String       @id @default(uuid()) @db.Uuid
+  pedidoId    String       @db.Uuid
+  fromEstado  EstadoPedido?
+  toEstado    EstadoPedido
+  changedById String?      @db.Uuid // usuario o repartidor que ejecutó el cambio
+  createdAt   DateTime     @default(now())
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId])
+  @@index([toEstado])
+  @@map("pedido_estado_logs")
+}

@@ -1,0 +1,145 @@
+{
+  "info": {
+    "name": "PedidosCampus - Notificaciones Service",
+    "description": "Coleccion minima para probar notificaciones via gateway y health directo del worker.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "workerUrl",
+      "value": "https://pedidoscampus-notificaciones.argoty-javier-3114.workers.dev"
+    },
+    {
+      "key": "serviceToken",
+      "value": "internal_super_secret_token_123"
+    },
+    {
+      "key": "userId",
+      "value": "u-123"
+    },
+    {
+      "key": "notifId",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Health",
+      "request": {
+        "method": "GET",
+          "header": [
+            {
+              "key": "x-service-token",
+              "value": "{{serviceToken}}"
+            }
+          ],
+          "url": {
+            "raw": "{{workerUrl}}/health",
+            "host": [
+              "{{workerUrl}}"
+            ],
+            "path": [
+              "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Crear notificacion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"tipo\": \"PEDIDO_ESTADO_CAMBIADO\",\n  \"mensaje\": \"Tu pedido va en camino\",\n  \"payload\": {\n    \"pedidoId\": \"p-100\",\n    \"estado\": \"en_camino\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/notifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('notifId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Listar por usuario",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/{{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "{{userId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Marcar como leida",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/{{notifId}}/leer",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "{{notifId}}",
+            "leer"
+          ]
+        }
+      }
+    }
+  ]
+}

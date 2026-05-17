@@ -1,0 +1,601 @@
+{
+  "info": {
+    "_postman_id": "user-service-collection",
+    "name": "PedidosCampus - User Service",
+    "description": "PedidosCampus User Service - Complete API testing collection\n\n**SETUP:**\n1. Import collection\n2. Set collection variables:\n   - BASE_URL: {{BASE_URL}} (default: http://localhost:3000)\n   - USUARIO_TOKEN: [JWT with role: usuario]\n   - REPARTIDOR_TOKEN: [JWT with role: repartidor]\n   - ADMIN_TOKEN: [JWT with role: admin]\n\n**Pre-generated JWT Tokens (180d valid, for development):**\n- Usuario ID: 550e8400-e29b-41d4-a716-446655440000\n- Repartidor ID: 550e8400-e29b-41d4-a716-446655440001\n- Admin ID: 550e8400-e29b-41d4-a716-446655440002",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/swagger/v1/swagger.json",
+              "host": ["{{BASE_URL}}"],
+              "path": ["swagger", "v1", "swagger.json"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profiles - User Operations",
+      "item": [
+        {
+          "name": "1. Get My Profile (Usuario/Repartidor/Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
+            }
+          }
+        },
+        {
+          "name": "2. Create Profile (Usuario/Repartidor/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"usuario\",\n  \"nombre\": \"Juan Pérez García\",\n  \"telefono\": \"+34912345678\",\n  \"direccion\": \"Calle Principal 123, 28001 Madrid\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "3. Update My Profile (Usuario/Repartidor)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Pérez García (Updated)\",\n  \"telefono\": \"+34912345999\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
+            }
+          }
+        },
+        {
+          "name": "4. Get My Availability (Repartidor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me/availability",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me", "availability"]
+            }
+          }
+        },
+        {
+          "name": "5. Set My Availability (Repartidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disponible\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me/availability",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me", "availability"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profiles - Admin Operations",
+      "item": [
+        {
+          "name": "6. List All Profiles (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles?tipo=usuario&isActive=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "usuario",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Get Profile by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          }
+        },
+        {
+          "name": "8. Update Profile by ID (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Updated by Admin\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          }
+        },
+        {
+          "name": "9. Activate Profile (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000/activate",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000", "activate"]
+            }
+          }
+        },
+        {
+          "name": "10. Deactivate Profile (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000/deactivate",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "11. Delete Profile (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profiles - Internal (Gateway)",
+      "item": [
+        {
+          "name": "12. List Available Delivery Persons (Gateway)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/delivery?onlyAvailable=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "delivery"],
+              "query": [
+                {
+                  "key": "onlyAvailable",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "13. Search Profiles Advanced (Gateway)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/search?tipo=repartidor&disponible=true&limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "search"],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "repartidor",
+                  "disabled": true
+                },
+                {
+                  "key": "disponible",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14. Reserve Profile Atomic (Gateway)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ttlSeconds\": 300\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/reserve",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "reserve"]
+            }
+          }
+        },
+        {
+          "name": "15. Release Profile Reservation (Gateway)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/release",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "release"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Cases - Testing",
+      "item": [
+        {
+          "name": "Missing Authorization Header",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
+            }
+          }
+        },
+        {
+          "name": "Invalid JWT Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.here",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "me"]
+            }
+          }
+        },
+        {
+          "name": "Insufficient Permissions - Usuario tries Admin endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Profile Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/00000000-0000-0000-0000-000000000000",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        },
+        {
+          "name": "Validation Error - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Conflict - Profile Already Exists",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"usuario\",\n  \"nombre\": \"Another Profile\",\n  \"telefono\": \"+34987654321\",\n  \"direccion\": \"Different Address 456\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "Conflict - Reserve Unavailable Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Client",
+                "value": "gateway"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ttlSeconds\": 300\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/profiles/550e8400-e29b-41d4-a716-446655440001/reserve",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "profiles", "550e8400-e29b-41d4-a716-446655440001", "reserve"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "USUARIO_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzdWFyaW9AcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJ1c3VhcmlvIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC11c2VyLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.Tg22bVAG9RRBo5DI5CYzSS3_H2b85pIY61nzluvB7O8",
+      "type": "string"
+    },
+    {
+      "key": "REPARTIDOR_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJlbWFpbCI6InJlcGFydGlkb3JAcGVkaWRvc2NhbXB1cy5sb2NhbCIsInJvbGUiOiJyZXBhcnRpZG9yIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Im1hbnVhbC1yZXBhcnRpZG9yLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.cgOgs5skbTdunwvIwmf062UrzSAf6kr0C3QCOGzIkhw",
+      "type": "string"
+    },
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJlbWFpbCI6ImFkbWluQHBlZGlkb3NjYW1wdXMubG9jYWwiLCJyb2xlIjoiYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoibWFudWFsLWFkbWluLXRva2VuIiwiaWF0IjoxNzc2MzY5NDYzLCJleHAiOjE3OTE5MjE0NjN9.0iC3Lpk_pTWsoRPSyrdXNliw8eBQwh8JME3MMhUA5S4",
+      "type": "string"
+    }
+  ]
+}

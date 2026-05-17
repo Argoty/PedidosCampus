@@ -1,0 +1,45 @@
+graph LR
+    U["Usuario"]
+    R["Repartidor"]
+    A["Admin"]
+
+    GW["API Gateway - NestJS"]
+
+    AUTH["Auth - NestJS"]
+    USR["Usuarios - C# .NET 8"]
+    REST["Restaurantes - FastAPI"]
+    PED["Pedidos - Go + Gin"]
+    NOTIF["Notificaciones - Cloudflare Workers (TypeScript)"]
+    CAL["Calificaciones - Rust + Axum"]
+    IA["Agente IA - FastAPI + LLM"]
+
+    MQ["RabbitMQ"]
+
+    DB_AUTH[("PostgreSQL Auth")]
+    DB_USR[("PostgreSQL Usuarios")]
+    DB_REST[("PostgreSQL Restaurantes")]
+    DB_PED[("PostgreSQL Pedidos")]
+    DB_NOTIF[("Cloudflare KV Notificaciones")]
+    DB_CAL[("PostgreSQL Calificaciones")]
+
+    U --> GW
+    R --> GW
+    A --> GW
+
+    GW --> AUTH
+    GW --> USR
+    GW --> REST
+    GW --> PED
+    GW --> NOTIF
+    GW --> CAL
+    GW --> IA
+
+    AUTH --> DB_AUTH
+    USR --> DB_USR
+    REST --> DB_REST
+    PED --> DB_PED
+    NOTIF --> DB_NOTIF
+    CAL --> DB_CAL
+
+    PED -.-> MQ
+    MQ -.-> NOTIF

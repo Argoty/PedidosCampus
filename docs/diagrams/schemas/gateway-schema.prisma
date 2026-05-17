@@ -1,0 +1,4 @@
+// Microservicio: Gateway
+// Fuente de verdad: no define persistencia propia para Gateway.
+// Este microservicio enruta, valida JWT y aplica CORS.
+// Por diseño actual: SIN tablas y SIN relaciones persistentes.

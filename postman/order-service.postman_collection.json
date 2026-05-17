@@ -1,0 +1,478 @@
+{
+  "info": {
+    "_postman_id": "order-service-collection",
+    "name": "PedidosCampus - Order Service",
+    "description": "PedidosCampus Order Service - Complete API testing collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/health",
+              "host": ["{{BASE_URL}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - Create & List",
+      "item": [
+        {
+          "name": "1. Create Order (Usuario)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restauranteId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"items\": [\n    {\n      \"productId\": \"550e8400-e29b-41d4-a716-446655440100\",\n      \"nombre\": \"Hamburguesa Clásica\",\n      \"precioUnit\": 45000,\n      \"cantidad\": 2\n    },\n    {\n      \"productId\": \"550e8400-e29b-41d4-a716-446655440101\",\n      \"nombre\": \"Papas Fritas\",\n      \"precioUnit\": 15000,\n      \"cantidad\": 1\n    }\n  ],\n  \"direccionEntrega\": \"Calle Principal 123, Apartamento 501\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "2. List My Orders (Usuario)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders?limit=10&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "estado",
+                  "value": "pendiente",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - Get Details",
+      "item": [
+        {
+          "name": "3. Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Get Order History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - Repartidor Actions",
+      "item": [
+        {
+          "name": "5. Accept Order (Repartidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repartidorId\": \"550e8400-e29b-41d4-a716-446655440003\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/accept",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "6. Update Order Status (Repartidor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toEstado\": \"en_camino\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/status",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "status"]
+            },
+            "description": "Valid toEstado values: en_camino, entregado"
+          }
+        },
+        {
+          "name": "6b. Update Order Status (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toEstado\": \"entregado\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/status",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "7. List My Orders (Repartidor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/deliverer/550e8400-e29b-41d4-a716-446655440003",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "orders",
+                "deliverer",
+                "550e8400-e29b-41d4-a716-446655440003"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders - Cancel & Admin",
+      "item": [
+        {
+          "name": "8. Cancel Order (Usuario/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/cancel",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "9. List Active Orders (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/active?limit=20&offset=0",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "active"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "estado",
+                  "value": "en_camino",
+                  "disabled": true
+                },
+                {
+                  "key": "restauranteId",
+                  "value": "550e8400-e29b-41d4-a716-446655440000",
+                  "disabled": true
+                },
+                {
+                  "key": "repartidorId",
+                  "value": "550e8400-e29b-41d4-a716-446655440003",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Cases - Testing",
+      "item": [
+        {
+          "name": "Invalid JWT Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.here",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Missing Authorization Header",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/orders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Repartidor tries to Create Order (Forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{REPARTIDOR_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restauranteId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"items\": [{\"productId\": \"550e8400-e29b-41d4-a716-446655440100\", \"nombre\": \"Test\", \"precioUnit\": 10000, \"cantidad\": 1}],\n  \"direccionEntrega\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Usuario tries to Accept Order (Forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repartidorId\": \"550e8400-e29b-41d4-a716-446655440003\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders/{{ORDER_ID}}/accept",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders", "{{ORDER_ID}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Usuario tries to List Other Deliverer Orders (Forbidden)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/orders/deliverer/550e8400-e29b-41d4-a716-446655440003",
+              "host": ["{{BASE_URL}}"],
+              "path": [
+                "orders",
+                "deliverer",
+                "550e8400-e29b-41d4-a716-446655440003"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Order with Missing Items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USUARIO_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restauranteId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"items\": [],\n  \"direccionEntrega\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/orders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "USUARIO_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJyb2xlIjoidXN1YXJpbyIsImV4cCI6MTg3MjUwODAwMCwiaWF0IjoxNzc2MTE1NjY1fQ.GMP9CDMckgrkb-IFGrytBhYr-wGbjw18SwsZBdV_2YA",
+      "type": "string"
+    },
+    {
+      "key": "REPARTIDOR_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDMiLCJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDMiLCJyb2xlIjoicmVwYXJ0aWRvciIsImV4cCI6MTg3MjUwODAwMCwiaWF0IjoxNzc2MTE1NjY1fQ.QkENqb448CagsiL3fjudkkiA5s2Y47g841ksyNpjcqg",
+      "type": "string"
+    },
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDQiLCJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDQiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE4NzI1MDgwMDAsImlhdCI6MTc3NjExNTY2NX0.pc1jDkDpFr_64NOOS9sy77daxCpICQ7jELGofqiQyQk",
+      "type": "string"
+    },
+    {
+      "key": "ORDER_ID",
+      "value": "550e8400-e29b-41d4-a716-446655440200",
+      "type": "string"
+    }
+  ]
+}

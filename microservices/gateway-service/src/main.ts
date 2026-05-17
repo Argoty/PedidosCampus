@@ -7,7 +7,7 @@ async function bootstrap() {
   // Habilitar CORS centralizado para todo el clúster
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
-    : true;
+    : false;
   app.enableCors({
     origin: corsOrigins,
     credentials: true,

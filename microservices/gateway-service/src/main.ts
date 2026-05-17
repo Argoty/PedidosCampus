@@ -5,11 +5,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Habilitar CORS centralizado para todo el clúster
-  const corsOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
-    : false;
+  const corsRaw = process.env.CORS_ORIGINS;
+  let corsOrigin: string | string[] | boolean;
+  if (!corsRaw) {
+    corsOrigin = false;
+  } else if (corsRaw.trim() === '*') {
+    corsOrigin = '*'; // string wildcard (cors package lo maneja como "todos")
+  } else {
+    corsOrigin = corsRaw.split(',').map(o => o.trim());
+  }
   app.enableCors({
-    origin: corsOrigins,
+    origin: corsOrigin,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });

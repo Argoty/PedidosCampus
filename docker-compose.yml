@@ -174,6 +174,7 @@ services:
     environment:
       PORT: 8003
       RUST_LOG: info
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
       DATABASE_URL: postgresql://rating_user:${RATING_DB_PASSWORD:-rating_password}@rating-db:5432/rating_db?sslmode=disable
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_EXCHANGE: orders

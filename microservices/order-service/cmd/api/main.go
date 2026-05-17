@@ -88,10 +88,18 @@ func main() {
 		})
 	}
 
-	// Service token middleware (applies to everything except /health)
+	// Routes without authentication (order health through gateway)
+	ordersHealth := engine.Group("/orders/health")
+	{
+		ordersHealth.GET("", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+	}
+
+	// Service token middleware (applies to everything except health endpoints)
 	engine.Use(func(c *gin.Context) {
 		// Skip token check for health and OPTIONS
-		if c.Request.URL.Path == "/health" || c.Request.Method == "OPTIONS" {
+		if c.Request.URL.Path == "/health" || c.Request.URL.Path == "/orders/health" || c.Request.Method == "OPTIONS" {
 			c.Next()
 			return
 		}

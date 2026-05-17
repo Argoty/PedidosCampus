@@ -5,8 +5,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Habilitar CORS centralizado para todo el clúster
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+    : true;
   app.enableCors({
-    origin: true, // NestJS reflejará el origen de la peticion ("creará" el origin: 'http://localhost:3000' dinámico)
+    origin: corsOrigins,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });

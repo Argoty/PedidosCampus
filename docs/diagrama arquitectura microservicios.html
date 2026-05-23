@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagrama de Microservicios</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124,58,237,0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(59,130,246,0.14), transparent 30%),
+        linear-gradient(180deg, #0b1020 0%, #111827 100%);
+      min-height: 100vh;
+      color: white;
+      padding: 30px;
+      overflow-x: auto;
+    }
+
+    .container {
+      max-width: 1900px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 5vw, 4.6rem);
+      font-weight: 800;
+      margin-bottom: 14px;
+      background: linear-gradient(90deg, #ffffff 0%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -2px;
+    }
+
+    .hero p {
+      max-width: 900px;
+      margin: auto;
+      color: #94a3b8;
+      line-height: 1.8;
+      font-size: 1.02rem;
+    }
+
+    .diagram-wrapper {
+      background: rgba(15,23,42,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 32px;
+      padding: 30px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      overflow: auto;
+    }
+
+    #diagram {
+      min-width: 1400px;
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    .footer {
+      margin-top: 26px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
+
+      .diagram-wrapper {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <section class="hero">
+      <h1>Arquitectura de Microservicios</h1>
+      <p>
+        Plataforma distribuida basada en microservicios desacoplados utilizando NestJS, FastAPI,
+        Go, Rust, PostgreSQL, RabbitMQ y Cloudflare Workers.
+      </p>
+    </section>
+
+    <section class="diagram-wrapper">
+      <div class="mermaid" id="diagram"></div>
+    </section>
+
+    <section class="footer">
+      <div class="legend">
+        <span class="dot" style="background:#7c3aed"></span>
+        API Gateway
+      </div>
+
+      <div class="legend">
+        <span class="dot" style="background:#3b82f6"></span>
+        Microservicios
+      </div>
+
+      <div class="legend">
+        <span class="dot" style="background:#10b981"></span>
+        Bases de Datos
+      </div>
+
+      <div class="legend">
+        <span class="dot" style="background:#f59e0b"></span>
+        Comunicación Asíncrona
+      </div>
+    </section>
+
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: true,
+       maxTextSize: 200000,
+      theme: 'base',
+      securityLevel: 'loose',
+      flowchart: {
+        curve: 'basis',
+        nodeSpacing: 60,
+        rankSpacing: 90,
+        padding: 18,
+        useMaxWidth: false,
+      },
+      themeVariables: {
+        background: '#0f172a',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#334155',
+        lineColor: '#64748b',
+        secondaryColor: '#111827',
+        tertiaryColor: '#1e293b',
+        clusterBkg: '#0f172a',
+        clusterBorder: '#334155',
+        edgeLabelBackground: '#0f172a',
+        fontFamily: 'Inter',
+        fontSize: '16px',
+      }
+    });
+
+    const graph = `
+flowchart TB
+
+%% CLIENTES
+subgraph CLIENTES["👥 Clientes"]
+  direction LR
+
+  U["👤 Usuario"]
+  R["🏍️ Repartidor"]
+  A["🛡️ Admin"]
+end
+
+%% GATEWAY
+GW["<div style='padding:8px'>
+<div style='font-size:20px;font-weight:700'>🌐 API Gateway</div>
+<div style='margin-top:6px;color:#cbd5e1'>NestJS</div>
+<img src='https://cdn.simpleicons.org/nestjs/E0234E' width='42'/>
+</div>"]
+
+%% MICROSERVICIOS
+subgraph SVC["⚙️ Microservicios"]
+  direction LR
+
+  subgraph G1["Auth"]
+    direction TB
+    AUTH["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>🔐 Auth</div>
+    <div style='margin-top:8px'>NestJS</div>
+    <img src='https://cdn.simpleicons.org/nestjs/E0234E' width='40'/>
+    </div>"]
+    DB_AUTH[("🐘 PostgreSQL Auth")]
+    AUTH --> DB_AUTH
+  end
+
+  subgraph G2["Usuarios"]
+    direction TB
+    USR["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>👥 Usuarios</div>
+    <div style='margin-top:8px'>C# .NET 8</div>
+    <img src='https://cdn.simpleicons.org/dotnet/512BD4' width='40'/>
+    </div>"]
+    DB_USR[("🐘 PostgreSQL Usuarios")]
+    USR --> DB_USR
+  end
+
+  subgraph G3["Restaurantes"]
+    direction TB
+    REST["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>🍔 Restaurantes</div>
+    <div style='margin-top:8px'>FastAPI</div>
+    <img src='https://cdn.simpleicons.org/fastapi/009688' width='40'/>
+    </div>"]
+    DB_REST[("🐘 PostgreSQL Restaurantes")]
+    REST --> DB_REST
+  end
+
+  subgraph G4["Pedidos"]
+    direction TB
+    PED["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>🛒 Pedidos</div>
+    <div style='margin-top:8px'>Go + Gin</div>
+    <img src='https://cdn.simpleicons.org/go/00ADD8' width='40'/>
+    </div>"]
+    DB_PED[("🐘 PostgreSQL Pedidos")]
+    PED --> DB_PED
+  end
+
+  subgraph G5["Notificaciones"]
+    direction TB
+    NOTIF["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>🔔 Notificaciones</div>
+    <div style='margin-top:8px'>Cloudflare Workers</div>
+    <img src='https://cdn.simpleicons.org/cloudflare/F38020' width='40'/>
+    </div>"]
+    DB_NOTIF[("☁️ Cloudflare KV")]
+    NOTIF --> DB_NOTIF
+  end
+
+  subgraph G6["Calificaciones"]
+    direction TB
+    CAL["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>⭐ Calificaciones</div>
+    <div style='margin-top:8px'>Rust + Axum</div>
+    <img src='https://cdn.simpleicons.org/rust/ffffff' width='40'/>
+    </div>"]
+    DB_CAL[("🐘 PostgreSQL Calificaciones")]
+    CAL --> DB_CAL
+  end
+
+  subgraph G7["Agente IA"]
+    direction TB
+    IA["<div style='padding:8px'>
+    <div style='font-size:18px;font-weight:700'>🤖 Agente IA</div>
+    <div style='margin-top:8px'>FastAPI + LLM</div>
+    <img src='https://cdn.simpleicons.org/openai/ffffff' width='40'/>
+    </div>"]
+  end
+end
+
+%% INFRA
+MQ["<div style='padding:8px'>
+<div style='font-size:20px;font-weight:700'>📨 RabbitMQ</div>
+<img src='https://cdn.simpleicons.org/rabbitmq/FF6600' width='44'/>
+</div>"]
+
+%% CONEXIONES
+U --> GW
+R --> GW
+A --> GW
+
+GW --> AUTH
+GW --> USR
+GW --> REST
+GW --> PED
+GW --> NOTIF
+GW --> CAL
+GW --> IA
+
+PED -. evento .-> MQ
+MQ -. notifica .-> NOTIF
+
+%% ESTILOS
+classDef gateway fill:#6d28d9,stroke:#8b5cf6,color:#fff,stroke-width:3px;
+classDef service fill:#172554,stroke:#3b82f6,color:#fff,stroke-width:2px;
+classDef database fill:#052e16,stroke:#10b981,color:#fff,stroke-width:2px;
+classDef mq fill:#78350f,stroke:#f59e0b,color:#fff,stroke-width:3px;
+classDef client fill:#111827,stroke:#64748b,color:#fff,stroke-width:2px;
+
+class GW gateway;
+class MQ mq;
+class AUTH,USR,REST,PED,NOTIF,CAL,IA service;
+class DB_AUTH,DB_USR,DB_REST,DB_PED,DB_NOTIF,DB_CAL database;
+class U,R,A client;
+`;
+
+    document.getElementById('diagram').innerHTML = await mermaid.render('microservicesDiagram', graph).then(r => r.svg);
+  </script>
+
+</body>
+</html>

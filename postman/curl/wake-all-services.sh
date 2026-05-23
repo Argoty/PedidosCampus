@@ -6,6 +6,7 @@ echo "Wake-up: Hitting all Render services IN PARALLEL"
 echo "==============================================="
 
 SERVICES=(
+	"https://pedidoscampus-gateway.onrender.com:gateway"
 	"https://pedidoscampus-auth.onrender.com:auth-service"
 	"https://pedidoscampus-user.onrender.com:user-service"
 	"https://pedidoscampus-restaurant.onrender.com:restaurant-service"
@@ -43,8 +44,8 @@ echo ""
 
 PIDS=()
 for entry in "${SERVICES[@]}"; do
-	url="${entry%%:*}"
-	label="${entry#*:}"
+	url="${entry%:*}"
+	label="${entry##*:}"
 	(wake_one "$url" "$label") &
 	PIDS+=($!)
 done
